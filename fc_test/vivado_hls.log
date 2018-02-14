@@ -1,0 +1,46 @@
+================================================================
+  Vivado(TM) HLS - High-Level Synthesis from C, C++ and SystemC
+  Version 2017.2
+  Build 1909853 on Thu Jun 15 18:55:24 MDT 2017
+  Copyright (C) 1986-2017 Xilinx, Inc. All Rights Reserved.
+================================================================
+INFO: [HLS 200-10] Running '/opt/Xilinx/Vivado_HLS/2017.2/bin/unwrapped/lnx64.o/vivado_hls'
+INFO: [HLS 200-10] For user 'root' on host '8feeac74b934' (Linux_x86_64 version 4.13.0-31-generic) on Tue Jan 23 22:53:23 +0000 2018
+INFO: [HLS 200-10] In directory '/workspace/fc_test'
+INFO: [HLS 200-10] Creating and opening project '/workspace/fc_test/test'.
+INFO: [HLS 200-10] Adding design file 'fc_layer.cpp' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc1.b' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc1.in' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc1.out' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc1.w' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc2.b' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc2.in' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc2.out' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc2.w' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc3.b' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc3.in' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc3.out' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc3.w' to the project
+INFO: [HLS 200-10] Adding test bench file 'fc_layer_test.cpp' to the project
+INFO: [HLS 200-10] Creating and opening solution '/workspace/fc_test/test/solution1'.
+INFO: [HLS 200-10] Setting target device to 'xcvu095-ffvc1517-2-e'
+INFO: [SYN 201-201] Setting up clock 'default' with a period of 10ns.
+INFO: [SIM 211-2] *************** CSIM start ***************
+INFO: [SIM 211-4] CSIM will launch GCC as the compiler.
+   Compiling ../../../../fc_layer_test.cpp in debug mode
+   Compiling ../../../../fc_layer.cpp in debug mode
+   Generating csim.exe
+Reading 7840 words from fc1.in
+Reading 10240 words from fc1.out
+Reading 802816 words from fc1.w
+Reading 1024 words from fc1.b
+Begin Test
+Batch Size: 10
+Num Inputs: 784
+Num Outputs: 1024
+Num Weights: 802816
+Num Biases: 1024
+input ptr: 0x7f32a52b7010
+INFO: [SIM 211-1] CSim done with 0 errors.
+INFO: [SIM 211-3] *************** CSIM finish ***************
+[2Kvivado_hls> [12C[2Kvivado_hls> q[13C[2Kvivado_hls> qu[14C[2Kvivado_hls> qui[15C[2Kvivado_hls> quit[16C
