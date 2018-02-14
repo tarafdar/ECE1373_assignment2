@@ -86,27 +86,3 @@ To do this you will have to use the extractParams.py script in nn_params
 You will modify the layers array at the top to include all layers you want the input and output for. Refer to /opt/caffe/models/bvlc_alexnet/deploy.prototxt for layer names.
 
 
-
-
-
-
-
-You must first create the Hypervisor, as this checkpoint is used to create your applications (your applications are synthesized relative to the Hypervisor)
-
-
-3)cd vivado_hls_proj
-
-4)vivado_hls conv_hls.tcl
-
-Running cosim on the unoptimized code will take a really long time. It has been commented out. Feel free to add it back to an optimized version.
-
-If you look at the testing functions (fc/fc_layer_test.cpp conv/conv_layer_test.cpp) you will notice that there is an imageDir string.
-This test function checks for weights, biase, input and golden reference to be in nn_params / (layer name) / weights, nn_params / (layer name) / biases, etc.
-
-To test other layers you would have to change the string to point to another directory.
-
-We provide a three fc layers which you can run through (fc1, fc2, fc3) and three convolution layers (conv1_7x7_s2, conv2_3x3_reduce, inception3a_1x1)
-
-You can make more binaries by running the extractParams.py. This requires an install of caffe (please refer online on how to get caffe).
-We will also provide a docker shortly with vivado and caffe preinstalled. 
-
