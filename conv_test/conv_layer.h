@@ -5,8 +5,8 @@
 // Limits
 #define MAX_BATCH 10
 #define MAX_KERNEL_SIZE 7
-#define MAX_INPUT_DIMS 3
-#define MAX_OUTPUT_DIMS 64
+#define MAX_INPUT_DIMS 384
+#define MAX_OUTPUT_DIMS 384
 #define MAX_INPUT_WIDTH 230
 #define MAX_INPUT_HEIGHT 230
 #define MAX_OUTPUT_WIDTH 112
