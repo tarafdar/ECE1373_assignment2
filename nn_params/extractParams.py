@@ -9,30 +9,31 @@ from scipy.misc import imread
 from PIL import Image
 np.set_printoptions(threshold=np.nan)
 
+image_dim = 224
 #net = caffe.Net('/opt/caffe/models/bvlc_googlenet/deploy.prototxt' , '/opt/caffe/models/bvlc_googlenet/bvlc_googlenet.caffemodel', caffe.TEST)
 net = caffe.Net('/opt/caffe/models/bvlc_alexnet/deploy.prototxt' , '/opt/caffe/models/bvlc_alexnet/bvlc_alexnet.caffemodel', caffe.TEST)
 
-#layers = ['conv1/7x7_s2', 'conv2/3x3_reduce', 'inception_3a/1x1']
+#layers = ['conv2/3x3_reduce', 'inception_3a/1x1']
 layers = ['fc8']
 #pad = [3,0, 0]
 #ix = [224,56, 28]
 #batches = [4,4, 4]
 #input_d = [3,64, 192]
 num_images=10
-array_image = np.zeros((num_images,3, 227, 227)).astype(np.float32) 
+array_image = np.zeros((num_images,3, image_dim, image_dim)).astype(np.float32) 
 
 
 for i in range(0, num_images-1):
     image_name = 'cars_test/' + "%05d"%(i+1) + '.jpg' 
     img = Image.open(image_name)
-    img =  img.resize((227,227), Image.BILINEAR)
+    img =  img.resize((image_dim,image_dim), Image.BILINEAR)
     img.save(image_name)
     image = imread(image_name)
-    image = image.reshape(1,3,227,227)
+    image = image.reshape(1,3,image_dim,image_dim)
     array_image[i] = image
 
 array_image = np.asarray(array_image)
-array_image = array_image.reshape(num_images, 3, 227, 227)
+array_image = array_image.reshape(num_images, 3, image_dim, image_dim)
 net.blobs['data'].data[...] = array_image
 net.forward()
 
