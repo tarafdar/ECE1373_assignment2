@@ -1,7 +1,9 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
-#include <cassert>
+#include <vector>
+#include <map>
+#include <string>
 #include "fc_layer.h"
 #include "util/shared.h"
 
@@ -9,66 +11,75 @@ using namespace std;
 
 int main()
 {
-  float * weights;
-  float * biases;
-  float * inputs;
+  float * dma_input;
   float * gold_outputs;
   float * outputs;
-  int retval = 0;
-  
-  std::string imageDir = "nn_params/fc3/";
-  vector<int> input_size = readFile(imageDir+"input", inputs, MAX_BATCH*MAX_INPUT_SIZE);
-  vector<int> output_size = readFile(imageDir+"output", gold_outputs, MAX_BATCH*MAX_OUTPUT_SIZE);
-  vector<int> weight_size = readFile(imageDir+"weights", weights, MAX_OUTPUT_SIZE*MAX_INPUT_SIZE);
-  vector<int> bias_size = readFile(imageDir+"biases", biases, MAX_OUTPUT_SIZE);
 
-  assert(input_size.size() == 2);
-  assert(output_size.size() == 2);
-  assert(weight_size.size() == 2);
-  assert(bias_size.size() == 1);
+  cout << "Starting Test " << endl;
+  string imageDir = "nn_params/fc6";
+  map<string, int> layer_params = readParams(imageDir + "/params");
 
-  int batch_size = input_size[0];
-  int num_inputs = input_size[1];
-  int num_outputs = output_size[1];
+  // Read inputs
+  // Inputs are packed together as weights, biases and input values
+  // Allocate enough space for outputs
+  if (readRawFile(imageDir + "/dma_in",
+                  dma_input,
+                  layer_params["input_dim"]*layer_params["output_dim"]+
+                  layer_params["output_dim"]+
+                  layer_params["batch_size"]*layer_params["input_dim"],
+                  MAX_WEIGHT_SIZE+MAX_OUTPUT_SIZE+
+                  MAX_BATCH*MAX_INPUT_SIZE+
+                  MAX_BATCH*MAX_OUTPUT_SIZE))
+    return 1;
+  // Read gold outputs
+  if (readRawFile(imageDir + "/output",
+                  gold_outputs,
+                  layer_params["batch_size"]*layer_params["output_dim"],
+                  MAX_BATCH*MAX_OUTPUT_SIZE))
+    return 1;
 
-  // Do some input checking
-  if (num_inputs > MAX_INPUT_SIZE || num_outputs > MAX_OUTPUT_SIZE ||
-      input_size[0] != output_size[0] ||
-      batch_size > MAX_BATCH || 
-      weight_size[0] != num_outputs || weight_size[1] != num_inputs ||
-      bias_size[0] != num_outputs)
+  int num_outputs = layer_params["output_dim"];
+  int num_inputs = layer_params["input_dim"];
+  int num_weights = layer_params["input_dim"]*layer_params["output_dim"];
+  int num_biases = layer_params["output_dim"];
+
+  // very basic input checking
+  if (layer_params["input_dim"] > MAX_INPUT_SIZE ||
+      layer_params["output_dim"] > MAX_OUTPUT_SIZE ||
+      layer_params["batch_size"] > MAX_BATCH)
   {
-    cerr << "Problem with input files\n";
-    retval = 1;
-  }
-  else
-  {
+    cerr << "Problem with layer params\n";
+    return 1;
+  } else {
+    int b = layer_params["batch_size"];
+    int er = layer_params["enable_relu"];
+
     cout << "Begin Test\n"
-         << "Batch Size: " << batch_size << "\n"
-         << "Num Inputs: " << input_size[1] << "\n"
-         << "Num Outputs: " << output_size[1] << "\n"
-         << "Num Weights: " << weight_size[0]*weight_size[1] << "\n"
-         << "Num Biases: " << bias_size[0] << endl;
-
-    // Allocate space for accelerator outputs
-    outputs = new float[MAX_BATCH*MAX_OUTPUT_SIZE];
+       << "Batch Size: " << b << endl
+       << "Num Inputs: " << num_inputs << endl
+       << "Num Outputs: " << num_outputs << endl
+       << "Enable ReLU: " << er << endl;
+ 
+    // Output Offset
+    outputs = dma_input + b*num_inputs+num_biases+num_weights;
 
     // Run Accelerator
-    fc_layer(weights, biases,
-             inputs, outputs,
-             batch_size, num_inputs, num_outputs);
+    fc_layer(dma_input, 0, sizeof(float)*(b*num_inputs+num_biases + num_weights),
+             b, num_inputs, num_outputs, er);
 
+    std::cout << "DONE" << std::endl;
     // Check outputs
     float total = 0.0f;
-    for (int i = 0; i < batch_size*num_outputs; i++)
+    for (int i = 0; i < b*num_outputs; i++)
     {
+      //cout << outputs[i] << " != " << gold_outputs[i] << endl;
       float err = fabs(outputs[i] - gold_outputs[i]);
       total += err*err;
     }
-
-    float avg_error = total/(batch_size*num_outputs);
-    cout << "Mean Squared Error " << avg_error << endl;
+    float avg_error = total/(b *num_outputs);
+    cout << "Mean Square Error " << avg_error << endl;
   }
 
-  return retval;
+  return 0;
 }
+
