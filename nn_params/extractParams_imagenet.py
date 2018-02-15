@@ -1,41 +1,39 @@
-__author__ = 'pittnuts'
-'''
-Main script to run classification/test/prediction/evaluation
-'''
 import os
 import string
 import numpy as np
 import struct
-import matplotlib.pyplot as plt
-from scipy.io import *
-from PIL import Image
 import caffe
 import sys
 import lmdb
 from caffe.proto import caffe_pb2
 from os import system
-import time
-import argparse
 from pprint import pprint
 from google.protobuf import text_format
+import argparse
 
-
-
-
-
-
-total_batches=50
-
-#model  = '/opt/caffe/models/bvlc_alexnet/deploy.prototxt'
-#weights  = '/opt/caffe/models/bvlc_alexnet/bvlc_alexnet.caffemodel'
-#mean_file = '/opt/caffe/data/ilsvrc12/imagenet_mean_227.binaryproto'
-#image_root = 'alexnet_batches/'
-#imagenet_val_path = '/opt/caffe/examples/imagenet/ilsvrc12_train_227_lmdb'
 model  = '/opt/caffe/models/vgg16/VGG_ILSVRC_16_layers_deploy_update.prototxt'
 weights  = '/opt/caffe/models/vgg16/VGG_ILSVRC_16_layers_update.caffemodel'
 mean_file = '/opt/caffe/data/ilsvrc12/imagenet_mean_224.binaryproto'
-image_root = '../data/vgg_batches/'
+image_root = '../data/vgg_batches_test/'
 imagenet_val_path = '/opt/caffe/examples/imagenet/ilsvrc12_train_224_lmdb'
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--model', action='store', dest='model', default=model, type= str)
+parser.add_argument('--weights', action='store', dest='weights', default=weights, type= str)
+parser.add_argument('--mean_file', action='store', dest='mean_file', default=mean_file, type= str)
+parser.add_argument('--image_root', action='store', dest='image_root', default=image_root, type= str)
+parser.add_argument('--imagenet_val_path', action='store', dest='imagenet_val_path', default=imagenet_val_path, type= str)
+parser.add_argument('--total_batches', action='store', dest='total_batches', default=1, type= int)
+results = parser.parse_args()
+
+model = results.model
+weights  = results.weights 
+mean_file = results.mean_file 
+image_root = results.image_root
+imagenet_val_path = results.imagenet_val_path 
+total_batches=results.total_batches
+
+
 caffe.set_mode_cpu()
 parse_net = caffe_pb2.NetParameter()
 with open(model, 'r') as f:
@@ -47,7 +45,6 @@ net = caffe.Net(model, weights, caffe.TEST)
 
 batch_size = net.blobs['data'].data[...].shape[0]
 layers = idx_map.keys()
-#layers = ['fc8']
 labels_set = set()
 lmdb_env = lmdb.open(imagenet_val_path)
 lmdb_txn = lmdb_env.begin()
@@ -57,7 +54,6 @@ mean_data = open( mean_file , 'rb' ).read()
 mean_blob.ParseFromString(mean_data)
 pixel_mean = np.array( caffe.io.blobproto_to_array(mean_blob) )
 
-
 avg_time = 0
 label = np.zeros((batch_size,1))
 image_count = 0
@@ -65,6 +61,7 @@ image_count = 0
 
 
 print "Batch Size " + str(batch_size)
+print "Processing  " + str(total_batches) + " batches"
 num_layer = 0
 num_batch = 0
 for key, value in lmdb_cursor:
