@@ -24,7 +24,7 @@ from google.protobuf import text_format
 
 
 
-total_batches=500
+total_batches=50
 
 #model  = '/opt/caffe/models/bvlc_alexnet/deploy.prototxt'
 #weights  = '/opt/caffe/models/bvlc_alexnet/bvlc_alexnet.caffemodel'
@@ -64,6 +64,7 @@ image_count = 0
 
 
 
+print "Batch Size " + str(batch_size)
 num_layer = 0
 num_batch = 0
 for key, value in lmdb_cursor:
@@ -74,7 +75,6 @@ for key, value in lmdb_cursor:
     image = image.astype(np.uint8)
     image = image-pixel_mean.mean(0)
     net.blobs['data'].data[image_count%batch_size] = image#image-pixel_mean
-    print "Batch Size " + str(batch_size)
     if num_batch >= total_batches:
 	break
     if image_count % batch_size == (batch_size-1):
