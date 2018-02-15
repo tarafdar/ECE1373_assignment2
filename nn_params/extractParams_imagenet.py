@@ -40,6 +40,11 @@ with open(model, 'r') as f:
   text_format.Merge(f.read(), parse_net)
 idx_map = {str(x.name):i for i,x in enumerate(parse_net.layer) if x.type in {'Convolution', 'Pooling', 'InnerProduct'}}
 
+relu_map = {str(k):0 for k in idx_map.keys()}
+for layer in parse_net.layer:
+  if layer.type == "ReLU" and layer.top == layer.bottom:
+    for layer_name in layer.top:
+      relu_map[str(layer_name)] = 1
 
 net = caffe.Net(model, weights, caffe.TEST)
 
@@ -93,7 +98,8 @@ for key, value in lmdb_cursor:
             # Layer Parameters
     	    parse_layer = parse_net.layer[idx_map[layer]]
     	    layer_params = {'name':layer,
-		    'type':str(parse_layer.type)}
+		                      'type':str(parse_layer.type),
+		                      'enable_relu':relu_map[layer]}
 	   
     	    # Create output directory
 	    dirname = dirnameBatch + string.replace(layer,'/','_')
@@ -161,8 +167,8 @@ for key, value in lmdb_cursor:
 	    else:
       	        pad_arr = input_blob
                 layer_params['batch_size'] = pad_arr.shape[0]
-                layer_params['input_dim'] = pad_arr.shape[1]
-                layer_params['output_dim'] = output_blob.shape[1]
+                layer_params['input_dim'] = np.prod(pad_arr.shape[1:])
+                layer_params['output_dim'] = np.prod(output_blob.shape[1:])
 	    	
 	
 	
