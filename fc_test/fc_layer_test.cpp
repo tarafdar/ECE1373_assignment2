@@ -4,39 +4,17 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <sstream>
 #include "fc_layer.h"
+#include <assert.h>
+#include <chrono>
 #include "util/shared.h"
-
 using namespace std;
 
-int main()
+#define PRINT
+int run_single_test(string imageDir, map<string, int> layer_params, float *dma_input, float * gold_outputs)
 {
-  float * dma_input;
-  float * gold_outputs;
-  float * outputs;
 
-  cout << "Starting Test " << endl;
-  string imageDir = "nn_params/fc6";
-  map<string, int> layer_params = readParams(imageDir + "/params");
-
-  // Read inputs
-  // Inputs are packed together as weights, biases and input values
-  // Allocate enough space for outputs
-  if (readRawFile(imageDir + "/dma_in",
-                  dma_input,
-                  layer_params["input_dim"]*layer_params["output_dim"]+
-                  layer_params["output_dim"]+
-                  layer_params["batch_size"]*layer_params["input_dim"],
-                  MAX_WEIGHT_SIZE+MAX_OUTPUT_SIZE+
-                  MAX_BATCH*MAX_INPUT_SIZE+
-                  MAX_BATCH*MAX_OUTPUT_SIZE))
-    return 1;
-  // Read gold outputs
-  if (readRawFile(imageDir + "/output",
-                  gold_outputs,
-                  layer_params["batch_size"]*layer_params["output_dim"],
-                  MAX_BATCH*MAX_OUTPUT_SIZE))
-    return 1;
 
   int num_outputs = layer_params["output_dim"];
   int num_inputs = layer_params["input_dim"];
@@ -54,32 +32,63 @@ int main()
     int b = layer_params["batch_size"];
     int er = layer_params["enable_relu"];
 
+#ifdef PRINT
     cout << "Begin Test\n"
        << "Batch Size: " << b << endl
        << "Num Inputs: " << num_inputs << endl
        << "Num Outputs: " << num_outputs << endl
        << "Enable ReLU: " << er << endl;
- 
-    // Output Offset
-    outputs = dma_input + b*num_inputs+num_biases+num_weights;
+#endif
 
     // Run Accelerator
     fc_layer(dma_input, 0, sizeof(float)*(b*num_inputs+num_biases + num_weights),
              b, num_inputs, num_outputs, er);
 
-    std::cout << "DONE" << std::endl;
-    // Check outputs
-    float total = 0.0f;
-    for (int i = 0; i < b*num_outputs; i++)
-    {
-      //cout << outputs[i] << " != " << gold_outputs[i] << endl;
-      float err = fabs(outputs[i] - gold_outputs[i]);
-      total += err*err;
-    }
-    float avg_error = total/(b *num_outputs);
-    cout << "Mean Square Error " << avg_error << endl;
   }
 
+  return 0;
+}
+
+
+int main()
+{
+
+  string imageRootDir = "data/vgg_batches/batch_";
+//  string imageRootDir = "../data/vgg_batches/batch_";
+  int numBatches = 2;
+  string layer = "fc8";
+  string imageDir;
+  cout << "Starting Test with " << numBatches << " batches" <<  endl;
+
+  vector<map<string, int> > batch_layer_params = readBatchParams(imageRootDir, numBatches, layer);
+  vector<float *> dma_input_vec;
+  vector<float *> gold_outputs_vec;
+  if(readInputBatches(imageRootDir, batch_layer_params, numBatches, layer, MAX_WEIGHT_SIZE+MAX_OUTPUT_SIZE+MAX_BATCH*MAX_INPUT_SIZE+MAX_BATCH*MAX_OUTPUT_SIZE, dma_input_vec, false))
+	return 1;
+  if(readOutputBatches(imageRootDir, batch_layer_params, numBatches, layer, MAX_BATCH*MAX_OUTPUT_SIZE, gold_outputs_vec, false)) return 1;
+
+  auto start = chrono::system_clock::now(); 
+  for(int i=0; i<numBatches; i++){
+    
+    ostringstream ss;
+    ss << i;
+   
+#ifdef PRINT
+    cout << "Running batch" << i << endl;
+#endif
+    imageDir = imageRootDir + ss.str() + "/" + layer;
+    cout << "ImageDir is " << imageDir << endl;  
+    if(run_single_test(imageDir, batch_layer_params[i], dma_input_vec[i], gold_outputs_vec[i])!=0)
+	return 1;
+  }
+  auto end = chrono::system_clock::now(); 
+  auto elapsed = end - start;
+
+  float avg_error = get_mean_squared_error_and_write_file(dma_input_vec, gold_outputs_vec, numBatches, batch_layer_params, imageRootDir, layer, false);
+  
+  cout << "Mean Square Error " << avg_error << endl;
+  cout << "Computation took  " << chrono::duration_cast<chrono::milliseconds> (elapsed).count() << " ms" << endl;
+  std::cout << "DONE" << std::endl;
   return 0;
 }
 

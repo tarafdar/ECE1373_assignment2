@@ -2,7 +2,6 @@
 #include <ap_utils.h>
 #include "fc_layer.h"
 
-
 void fc_layer(float * mem,
               int input_offset,
               int output_offset,
@@ -23,7 +22,6 @@ void fc_layer(float * mem,
   const int num_weights = num_inputs*num_outputs;
   const int num_biases =  num_outputs;
 
- 
   for (int b = 0; b < batch_size; b++) {
 
     // Output Node Iterator

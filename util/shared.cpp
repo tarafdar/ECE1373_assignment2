@@ -2,10 +2,12 @@
 #include <fstream>
 #include <vector>
 #include <map>
-
+#include <assert.h>
 #include "shared.h"
-
+#include <sstream>
+#include <cmath>
 using namespace std;
+
 
 std::map<std::string, int> readParams(const std::string fname)
 {
@@ -31,7 +33,7 @@ std::map<std::string, int> readParams(const std::string fname)
       }
     } else if (!key.compare("name")) { 
       in_file >> svalue;
-      std::cout << "Parsing " << svalue << std::endl;
+//      std::cout << "Parsing " << svalue << std::endl;
     }
     else {
        in_file >> ivalue;
@@ -39,7 +41,7 @@ std::map<std::string, int> readParams(const std::string fname)
     }
   }
   in_file.close();
-  std::cout << "DONE\n";
+ // std::cout << "DONE\n";
   return params;
 }
 int readRawFile(const string fname,
@@ -144,3 +146,148 @@ std::vector <int> readFile(const string fname,
   delete [] read_sizes;
   return read_sizes_vec;
 }
+
+vector<map<string, int> > readBatchParams(string imageRootDir, int numBatches, string layer){
+
+   vector<map<string,int> > retVec;
+   ostringstream ss;
+   for(int i=0; i<numBatches; i++){
+        ss.str("");
+    	ss << i;
+  	string imageDir = imageRootDir + ss.str() + "/" + layer;
+  	map<string, int> layer_params = readParams(imageDir + "/params");
+	retVec.push_back(layer_params);
+   }
+
+   return retVec;
+}
+
+int readInputBatches(string imageRootDir, vector<map<string, int> > batch_layer_params, int numBatches, string layer, const int max_alloc, vector<float *> &ptr, bool conv){
+  float * dma_input;
+  ostringstream ss;
+  
+
+  // Read inputs
+  // Inputs are packed together as weights, biases and input values
+  // Allocate enough space for outputs
+
+  for(int i=0; i<numBatches; i++){
+        ss.str("");
+    	ss << i;
+	int size;
+        if(conv){
+  		size = batch_layer_params[i]["input_dim"]*batch_layer_params[i]["output_dim"]*
+                  batch_layer_params[i]["kernel_size"]*batch_layer_params[i]["kernel_size"]+
+                  batch_layer_params[i]["output_dim"]+
+                  batch_layer_params[i]["input_dim"]*batch_layer_params[i]["input_width"]*
+                  batch_layer_params[i]["input_height"]*batch_layer_params[i]["batch_size"];
+        }
+	else{
+  		size = batch_layer_params[i]["input_dim"]*batch_layer_params[i]["output_dim"]+
+	               batch_layer_params[i]["output_dim"] +
+	               batch_layer_params[i]["batch_size"]*batch_layer_params[i]["input_dim"];
+
+        }
+  	string imageDir = imageRootDir + ss.str() + "/" + layer;
+  	if (readRawFile(imageDir + "/dma_in",
+                  dma_input,
+                  size,
+		  max_alloc
+                 ))
+    	return 1;
+	ptr.push_back(dma_input);
+  }
+  return 0;
+
+}
+
+int readOutputBatches(string imageRootDir, vector<map<string, int> > batch_layer_params, int numBatches, string layer, const int max_alloc, vector <float *> &ptr, bool conv){
+  float * gold_outputs;
+  ostringstream ss;
+  
+
+  // Read inputs
+  // Inputs are packed together as weights, biases and input values
+  // Allocate enough space for outputs
+
+  int size;
+  for(int i=0; i<numBatches; i++){
+        ss.str("");
+    	ss << i;
+  	string imageDir = imageRootDir + ss.str() + "/" + layer;
+        if(conv){
+  	  size =      batch_layer_params[i]["output_dim"]*batch_layer_params[i]["output_width"]*
+                  batch_layer_params[i]["output_height"]*batch_layer_params[i]["batch_size"];
+        }
+	else{
+  	  size =      batch_layer_params[i]["output_dim"]*
+                      batch_layer_params[i]["batch_size"];
+
+        }
+  	// Read gold outputs
+  	if (readRawFile(imageDir + "/output",
+                  gold_outputs,
+                  size,
+                  max_alloc))
+    	return 1;
+	ptr.push_back(gold_outputs);
+    	gold_outputs += size;
+  }
+  return 0;
+
+}
+
+float get_mean_squared_error_and_write_file(vector<float *> mem, vector <float *> golden_output, int numBatches, vector<map<string,int> >batch_layer_params, string imageRootDir, string layer, bool conv){
+  
+
+  float total = 0.0f;
+
+  ostringstream ss;
+
+  int totalNumOutputs = 0;
+
+  for(int i=0; i<numBatches; i++){
+    int b = batch_layer_params[i]["batch_size"];
+
+    int num_inputs;
+    int num_biases;
+    int num_weights;
+    int num_outputs;
+    float * outputs;
+    if(conv){
+    	num_inputs = batch_layer_params[i]["input_dim"]*batch_layer_params[i]["input_width"]*
+    		   batch_layer_params[i]["input_height"];
+    	num_biases = batch_layer_params[i]["output_dim"];
+    	num_weights = batch_layer_params[i]["input_dim"]*batch_layer_params[i]["output_dim"]*batch_layer_params[i]["kernel_size"]*batch_layer_params[i]["kernel_size"];
+    	num_outputs = batch_layer_params[i]["output_dim"]*batch_layer_params[i]["output_width"]*batch_layer_params[i]["output_height"];
+    	totalNumOutputs += b*num_outputs;
+    	outputs = mem[i] + b*num_inputs+num_biases+num_weights;
+    }
+    else{
+    	num_inputs = batch_layer_params[i]["input_dim"];
+    	num_biases = batch_layer_params[i]["output_dim"];
+    	num_weights = batch_layer_params[i]["input_dim"]*batch_layer_params[i]["output_dim"];
+    	num_outputs = batch_layer_params[i]["output_dim"];
+    	totalNumOutputs += b*num_outputs;
+    	outputs = mem[i] + b*num_inputs+num_biases+num_weights;
+
+    }
+    for (int j = 0; j < b*num_outputs; j++)
+    {
+      float err = fabs(outputs[j] - golden_output[i][j]);
+      total += err*err;
+    }
+    ss.str("");
+    ss << i;
+    string imageDir = imageRootDir + ss.str() + "/" + layer + "/dma_out";
+    char * buffer = (char *)outputs;
+    ofstream myFile(imageDir.c_str(), ios::out | ios::binary);
+    myFile.write(buffer, num_outputs*sizeof(float));    
+    myFile.close();
+  }
+    return total/(totalNumOutputs);
+
+
+
+}
+
