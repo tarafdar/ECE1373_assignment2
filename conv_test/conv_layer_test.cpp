@@ -7,6 +7,8 @@
 #include "conv_layer.h"
 #include "util/shared.h"
 
+#define HW_CTRL_ADDR 0x00000000
+
 using namespace std;
 
 int main()
@@ -85,8 +87,14 @@ int main()
     outputs = dma_input + b*num_inputs+num_biases+num_weights;
 
     // Run Accelerator
+    #ifdef HW_TEST
+    hw_conv_layer(HW_CTRL_ADDR, dma_input, 0,
+                  sizeof(float)*(b*num_inputs+num_biases + num_weights),
+                  b, od, ox, oy, id, ix, iy, s, k);
+    #else
     conv_layer(dma_input, 0, sizeof(float)*(b*num_inputs+num_biases + num_weights),
                b, od, ox, oy, id, ix, iy, s, k);
+    #endif
 
     std::cout << "DONE" << std::endl;
     // Check outputs

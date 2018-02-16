@@ -1,8 +1,6 @@
 #include <algorithm>
 #include <float.h>
-#include <ap_utils.h>
 #include "conv_layer.h"
-#include <iostream>
 
 void conv_layer(float * mem,            // global memory pointer
                 int input_offset,       // offset of inputs
