@@ -7,7 +7,7 @@
 #include "fc_layer.h"
 #include "util/shared.h"
 
-#define HW_CTRL_ADDR 0x00000000
+#define HW_CTRL_ADDR 0x00010000
 
 using namespace std;
 
