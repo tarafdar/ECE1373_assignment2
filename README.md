@@ -46,6 +46,15 @@ cd ./8v3_shell
 vivado -mode batch -source create_mig_shell.tcl
 
 
+Creating the Data
+To create the data run the extractParams_imagenet.py in the nn_params directory.
+You can as an argument provide the number of batches, and the network model.
+To specify the batch size, you can modify the model file.
+This creates a directory per batch in the data/vgg_batches/ directory.
+Each batch contains the input, output, weights, biases, a description of the parameters for each layer, and the labels for the images.
+
+
+
 Running an Example
 
 We have provided an example with PCIe connecting to a convolution layer and an fc layer directly through PCIe. These modules are using only off-chip memory
@@ -72,17 +81,18 @@ This calls two scripts create_pr2_0.tcl and create_pr2_1.tcl
 The first script creates the partial application. If you want to modify it. Comment out the sourcing of create_pr2_1.tcl and modify the block diagram.
 
 At this point you can run the test application.
-cd ./pcie_tests/tests
-make
-./fully_connected_test
+Look at the Makefile to see the tests. To build for example a sample conv_layer in hardware it is. 
+make 
+./hw_conv_layer
 
-This writes control registers, copies data into the off-chip memory, starts the application and reads data out. Look at fully_connected.c for details.
+This writes control registers, copies data into the off-chip memory, starts the application and reads data out. 
+
+Verifying Accuracy
+The above test creates a file in the data directory for each batch layer calleddma_out. 
+The nn_params/softMax.py script pumps the data through a softmax and compares the results with the label information.
+This will give you an accuracy result of your network. 
 
 
-Creating More Layers
 
-To do this you will have to use the extractParams.py script in nn_params
-
-You will modify the layers array at the top to include all layers you want the input and output for. Refer to /opt/caffe/models/bvlc_alexnet/deploy.prototxt for layer names.
 
 
