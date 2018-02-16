@@ -7,6 +7,8 @@
 #include "fc_layer.h"
 #include "util/shared.h"
 
+#define HW_CTRL_ADDR 0x00000000
+
 using namespace std;
 
 int main()
@@ -16,7 +18,7 @@ int main()
   float * outputs;
 
   cout << "Starting Test " << endl;
-  string imageDir = "nn_params/fc6";
+  string imageDir = "nn_params/fc7";
   map<string, int> layer_params = readParams(imageDir + "/params");
 
   // Read inputs
@@ -64,8 +66,15 @@ int main()
     outputs = dma_input + b*num_inputs+num_biases+num_weights;
 
     // Run Accelerator
+    #ifdef HW_TEST
+    hw_fc_layer(HW_CTRL_ADDR, dma_input, 0,
+                sizeof(float)*(b*num_inputs+num_biases + num_weights),
+                b, num_inputs, num_outputs, er);
+    #else
     fc_layer(dma_input, 0, sizeof(float)*(b*num_inputs+num_biases + num_weights),
              b, num_inputs, num_outputs, er);
+    #endif
+   
 
     std::cout << "DONE" << std::endl;
     // Check outputs

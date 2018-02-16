@@ -1,7 +1,5 @@
 #include <algorithm>
-#include <ap_utils.h>
 #include "fc_layer.h"
-
 
 void fc_layer(float * mem,
               int input_offset,
