@@ -74,7 +74,7 @@ print "Processing  " + str(total_batches) + " batches"
 for i in range(0, total_batches):
     print "Processing Batch " + str(i)
     last_fc_path = image_root_path + '/batch_'+ str(i) + '/' + last_fc + '/'
-    last_fc_out = last_fc_path + 'output'
+    last_fc_out = last_fc_path + 'dma_out'
     label_path = image_root_path + '/batch_'+ str(i) + '/labels' 
     fc_input = np.fromfile(last_fc_out, dtype=np.float32)
     labels = np.fromfile(label_path, dtype=np.float64)

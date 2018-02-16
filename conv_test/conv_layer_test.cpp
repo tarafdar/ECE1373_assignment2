@@ -7,9 +7,10 @@
 #include "conv_layer.h"
 #include "util/shared.h"
 #include <sstream>
-#include <assert.h>
-#include <ctime>
 #include <chrono>
+
+#define HW_CTRL_ADDR 0x00000000
+
 using namespace std;
 
 
@@ -68,8 +69,14 @@ int run_single_test(string imageDir, map<string, int> layer_params, float * &dma
 #endif
 
     // Run Accelerator
+    #ifdef HW_TEST
+    hw_conv_layer(HW_CTRL_ADDR, dma_input, 0,
+                  sizeof(float)*(b*num_inputs+num_biases + num_weights),
+                  b, od, ox, oy, id, ix, iy, s, k);
+    #else
     conv_layer(dma_input, 0, sizeof(float)*(b*num_inputs+num_biases + num_weights),
                b, od, ox, oy, id, ix, iy, s, k);
+    #endif
 
   }
 
@@ -82,7 +89,6 @@ int main()
 {
 
   string imageRootDir = "data/vgg_batches/batch_";
-  //string imageRootDir = "../data/vgg_batches/batch_";
   int numBatches = 2;
   string layer = "conv3_3";
   string imageDir;

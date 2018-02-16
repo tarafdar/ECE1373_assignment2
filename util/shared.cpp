@@ -2,10 +2,27 @@
 #include <fstream>
 #include <vector>
 #include <map>
-#include <assert.h>
-#include "shared.h"
 #include <sstream>
 #include <cmath>
+#include <stdint.h>
+#include <assert.h>
+
+#include "shared.h"
+
+/* ltoh: little to host */
+/* htol: little to host */
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#  define ltohl(x)       (x)
+#  define ltohs(x)       (x)
+#  define htoll(x)       (x)
+#  define htols(x)       (x)
+#elif __BYTE_ORDER == __BIG_ENDIAN
+#  define ltohl(x)     __bswap_32(x)
+#  define ltohs(x)     __bswap_16(x)
+#  define htoll(x)     __bswap_32(x)
+#  define htols(x)     __bswap_16(x)
+#endif
+
 using namespace std;
 
 
@@ -282,7 +299,7 @@ float get_mean_squared_error_and_write_file(vector<float *> mem, vector <float *
     string imageDir = imageRootDir + ss.str() + "/" + layer + "/dma_out";
     char * buffer = (char *)outputs;
     ofstream myFile(imageDir.c_str(), ios::out | ios::binary);
-    myFile.write(buffer, num_outputs*sizeof(float));    
+    myFile.write(buffer, b*num_outputs*sizeof(float));    
     myFile.close();
   }
     return total/(totalNumOutputs);
@@ -291,3 +308,33 @@ float get_mean_squared_error_and_write_file(vector<float *> mem, vector <float *
 
 }
 
+void write_int(volatile void* map_base, int offset, int value)
+{
+  volatile void* virt_addr = (volatile void*)((char*)map_base + offset); 
+  *((uint32_t *) virt_addr) = htoll(value);
+}
+int read_int(volatile void* map_base, int offset)
+{
+  volatile void* virt_addr = (volatile void*)((char*)map_base + offset); 
+  return ltohl(*((uint32_t *) virt_addr));
+}
+
+void timespec_sub(struct timespec *t1, const struct timespec *t2)
+{
+  assert(t1->tv_nsec >= 0);
+  assert(t1->tv_nsec < 1000000000);
+  assert(t2->tv_nsec >= 0);
+  assert(t2->tv_nsec < 1000000000);
+  t1->tv_sec -= t2->tv_sec;
+  t1->tv_nsec -= t2->tv_nsec;
+  if (t1->tv_nsec >= 1000000000)
+  {
+    t1->tv_sec++;
+    t1->tv_nsec -= 1000000000;
+  }
+  else if (t1->tv_nsec < 0)
+  {
+    t1->tv_sec--;
+    t1->tv_nsec += 1000000000;
+  }
+}

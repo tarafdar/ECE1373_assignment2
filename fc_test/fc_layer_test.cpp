@@ -9,6 +9,9 @@
 #include <assert.h>
 #include <chrono>
 #include "util/shared.h"
+
+#define HW_CTRL_ADDR 0x00010000
+
 using namespace std;
 
 #define PRINT
@@ -41,8 +44,15 @@ int run_single_test(string imageDir, map<string, int> layer_params, float *dma_i
 #endif
 
     // Run Accelerator
+    #ifdef HW_TEST
+    hw_fc_layer(HW_CTRL_ADDR, dma_input, 0,
+                sizeof(float)*(b*num_inputs+num_biases + num_weights),
+                b, num_inputs, num_outputs, er);
+    #else
     fc_layer(dma_input, 0, sizeof(float)*(b*num_inputs+num_biases + num_weights),
              b, num_inputs, num_outputs, er);
+    #endif
+   
 
   }
 

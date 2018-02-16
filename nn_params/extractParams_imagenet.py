@@ -14,7 +14,7 @@ import argparse
 model  = '/opt/caffe/models/vgg16/VGG_ILSVRC_16_layers_deploy_update.prototxt'
 weights  = '/opt/caffe/models/vgg16/VGG_ILSVRC_16_layers_update.caffemodel'
 mean_file = '/opt/caffe/data/ilsvrc12/imagenet_mean_224.binaryproto'
-image_root = '../data/vgg_batches_test/'
+image_root = '../data/vgg_batches/'
 imagenet_val_path = '/opt/caffe/examples/imagenet/ilsvrc12_train_224_lmdb'
 
 parser = argparse.ArgumentParser()
@@ -23,7 +23,7 @@ parser.add_argument('--weights', action='store', dest='weights', default=weights
 parser.add_argument('--mean_file', action='store', dest='mean_file', default=mean_file, type= str)
 parser.add_argument('--image_root', action='store', dest='image_root', default=image_root, type= str)
 parser.add_argument('--imagenet_val_path', action='store', dest='imagenet_val_path', default=imagenet_val_path, type= str)
-parser.add_argument('--total_batches', action='store', dest='total_batches', default=1, type= int)
+parser.add_argument('--total_batches', action='store', dest='total_batches', default=2, type= int)
 results = parser.parse_args()
 
 model = results.model
