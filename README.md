@@ -88,8 +88,8 @@ make
 This writes control registers, copies data into the off-chip memory, starts the application and reads data out. 
 
 Verifying Accuracy
-The above test creates a file in the data directory for each batch layer calleddma_out. 
-The nn_params/softMax.py script pumps the data through a softmax and compares the results with the label information.
+The above test creates a file in the data directory for each batch layer called dma_out. 
+The nn_params/softMax.py script pumps the data out of the last fully connected layer  through a softmax and compares the results with the label information.
 This will give you an accuracy result of your network. 
 
 

@@ -65,7 +65,7 @@ int main()
 
   string imageRootDir = "data/vgg_batches/batch_";
 //  string imageRootDir = "../data/vgg_batches/batch_";
-  int numBatches = 2;
+  int numBatches = 10;
   string layer = "fc8";
   string imageDir;
   cout << "Starting Test with " << numBatches << " batches" <<  endl;
