@@ -18,7 +18,7 @@ foreach run_name [get_runs *_synth*] {
 }
 synth_design -top pr_region_2_wrapper -mode out_of_context
 write_checkpoint -force 8v3_shell/$projName.dcp
-source gen_pr2.tcl
+source 8v3_shell/gen_pr2.tcl
  
 #read_checkpoint -cell static_region_i/pr_region rp2_synth.dcp
 #opt_design
