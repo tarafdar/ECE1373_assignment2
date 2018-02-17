@@ -197,13 +197,13 @@ CONFIG.WUSER_WIDTH {0} \
  ] $s_axi
 
   # Create ports
+  set Res [ create_bd_port -dir I -from 0 -to 0 -type rst Res ]
   set c0_ddr4_ui_clk [ create_bd_port -dir I -type clk c0_ddr4_ui_clk ]
   set_property -dict [ list \
-CONFIG.ASSOCIATED_RESET {rst} \
+CONFIG.ASSOCIATED_RESET {rst:Res} \
 CONFIG.CLK_DOMAIN {static_region_xdma_0_0_axi_aclk} \
 CONFIG.FREQ_HZ {250000000} \
  ] $c0_ddr4_ui_clk
-  set peripheral_aresetn [ create_bd_port -dir I -from 0 -to 0 -type rst peripheral_aresetn ]
 
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
@@ -218,14 +218,6 @@ CONFIG.NUM_MI {1} \
 CONFIG.NUM_SI {2} \
  ] $axi_interconnect_1
 
-  # Create instance: fc_layer_0, and set properties
-  set fc_layer_0 [ create_bd_cell -type ip -vlnv xilinx.com:hls:fc_layer:1.0 fc_layer_0 ]
-
-  set_property -dict [ list \
-CONFIG.NUM_READ_OUTSTANDING {1} \
-CONFIG.NUM_WRITE_OUTSTANDING {1} \
- ] [get_bd_intf_pins /fc_layer_0/s_axi_CTRL_BUS]
-
   # Create instance: conv_layer_0, and set properties
   set conv_layer_0 [ create_bd_cell -type ip -vlnv xilinx.com:hls:conv_layer:1.0 conv_layer_0 ]
 
@@ -234,11 +226,20 @@ CONFIG.NUM_READ_OUTSTANDING {1} \
 CONFIG.NUM_WRITE_OUTSTANDING {1} \
  ] [get_bd_intf_pins /conv_layer_0/s_axi_CTRL_BUS]
 
+  # Create instance: fc_layer_0, and set properties
+  set fc_layer_0 [ create_bd_cell -type ip -vlnv xilinx.com:hls:fc_layer:1.0 fc_layer_0 ]
+
+  set_property -dict [ list \
+CONFIG.NUM_READ_OUTSTANDING {1} \
+CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /fc_layer_0/s_axi_CTRL_BUS]
+
   # Create instance: pcl_axifull_bridge_0, and set properties
   set pcl_axifull_bridge_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:pcl_axifull_bridge:1.0 pcl_axifull_bridge_0 ]
   set_property -dict [ list \
 CONFIG.ADDR_WIDTH {64} \
 CONFIG.DATA_WIDTH {128} \
+CONFIG.S_ID_WIDTH {5} \
  ] $pcl_axifull_bridge_0
 
   # Create instance: pcl_axilite_bridge_0, and set properties
@@ -256,6 +257,9 @@ CONFIG.NUM_READ_OUTSTANDING {1} \
 CONFIG.NUM_WRITE_OUTSTANDING {1} \
  ] [get_bd_intf_pins /pcl_axilite_bridge_0/s_axi]
 
+  # Create instance: proc_sys_reset_0, and set properties
+  set proc_sys_reset_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 proc_sys_reset_0 ]
+
   # Create interface connections
   connect_bd_intf_net -intf_net S00_AXI_1 [get_bd_intf_pins axi_interconnect_1/S00_AXI] [get_bd_intf_pins fc_layer_0/m_axi_mem]
   connect_bd_intf_net -intf_net S00_AXI_2 [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins pcl_axilite_bridge_0/m_axi]
@@ -267,14 +271,16 @@ CONFIG.NUM_WRITE_OUTSTANDING {1} \
   connect_bd_intf_net -intf_net s_axi_1 [get_bd_intf_ports s_axi] [get_bd_intf_pins pcl_axilite_bridge_0/s_axi]
 
   # Create port connections
-  connect_bd_net -net S00_ACLK_1 [get_bd_ports c0_ddr4_ui_clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_1/ACLK] [get_bd_pins axi_interconnect_1/M00_ACLK] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins axi_interconnect_1/S01_ACLK] [get_bd_pins fc_layer_0/ap_clk] [get_bd_pins conv_layer_0/ap_clk] [get_bd_pins pcl_axifull_bridge_0/aclk] [get_bd_pins pcl_axilite_bridge_0/aclk]
-  connect_bd_net -net S00_ARESETN_1 [get_bd_ports peripheral_aresetn] [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins axi_interconnect_1/S00_ARESETN] [get_bd_pins axi_interconnect_1/S01_ARESETN] [get_bd_pins fc_layer_0/ap_rst_n] [get_bd_pins conv_layer_0/ap_rst_n] [get_bd_pins pcl_axifull_bridge_0/aresetn] [get_bd_pins pcl_axilite_bridge_0/aresetn]
+  connect_bd_net -net Res_1 [get_bd_ports Res] [get_bd_pins proc_sys_reset_0/ext_reset_in]
+  connect_bd_net -net S00_ACLK_1 [get_bd_ports c0_ddr4_ui_clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_1/ACLK] [get_bd_pins axi_interconnect_1/M00_ACLK] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins axi_interconnect_1/S01_ACLK] [get_bd_pins conv_layer_0/ap_clk] [get_bd_pins fc_layer_0/ap_clk] [get_bd_pins pcl_axifull_bridge_0/aclk] [get_bd_pins pcl_axilite_bridge_0/aclk] [get_bd_pins proc_sys_reset_0/slowest_sync_clk]
+  connect_bd_net -net S00_ARESETN_1 [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins axi_interconnect_1/S00_ARESETN] [get_bd_pins axi_interconnect_1/S01_ARESETN] [get_bd_pins pcl_axifull_bridge_0/aresetn] [get_bd_pins pcl_axilite_bridge_0/aresetn] [get_bd_pins proc_sys_reset_0/interconnect_aresetn]
+  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins conv_layer_0/ap_rst_n] [get_bd_pins fc_layer_0/ap_rst_n] [get_bd_pins proc_sys_reset_0/peripheral_aresetn]
 
   # Create address segments
-  create_bd_addr_seg -range 0x000200000000 -offset 0x00000000 [get_bd_addr_spaces fc_layer_0/Data_m_axi_mem] [get_bd_addr_segs m_axi/Reg] SEG_m_axi_Reg
   create_bd_addr_seg -range 0x000200000000 -offset 0x00000000 [get_bd_addr_spaces conv_layer_0/Data_m_axi_mem] [get_bd_addr_segs m_axi/Reg] SEG_m_axi_Reg
-  create_bd_addr_seg -range 0x00010000 -offset 0x00010000 [get_bd_addr_spaces s_axi] [get_bd_addr_segs fc_layer_0/s_axi_CTRL_BUS/Reg] SEG_fc_layer_0_Reg
+  create_bd_addr_seg -range 0x000200000000 -offset 0x00000000 [get_bd_addr_spaces fc_layer_0/Data_m_axi_mem] [get_bd_addr_segs m_axi/Reg] SEG_m_axi_Reg
   create_bd_addr_seg -range 0x00010000 -offset 0x00000000 [get_bd_addr_spaces s_axi] [get_bd_addr_segs conv_layer_0/s_axi_CTRL_BUS/Reg] SEG_conv_layer_0_Reg
+  create_bd_addr_seg -range 0x00010000 -offset 0x00010000 [get_bd_addr_spaces s_axi] [get_bd_addr_segs fc_layer_0/s_axi_CTRL_BUS/Reg] SEG_fc_layer_0_Reg
 
 
   # Restore current instance
@@ -291,6 +297,4 @@ CONFIG.NUM_WRITE_OUTSTANDING {1} \
 
 create_root_design ""
 
-
-common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
