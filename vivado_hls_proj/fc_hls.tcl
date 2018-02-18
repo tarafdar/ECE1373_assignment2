@@ -1,9 +1,10 @@
-open_project vivado_hls_proj/fc_proj 
+cd vivado_hls_proj
+open_project fc_proj 
 set_top fc_layer
-add_files fc_test/fc_layer.cpp 
-add_files -tb fc_test/fc_layer_test.cpp -cflags "-I . -std=c++0x"
-add_files -tb util/shared.cpp
-add_files -tb data
+add_files ../fc_test/fc_layer.cpp 
+add_files -tb ../fc_test/fc_layer_test.cpp -cflags "-I . -std=c++0x"
+add_files -tb ../util/shared.cpp
+add_files -tb ../data
 open_solution "solution1"
 set_part {xcvu095-ffvc1517-2-e} -tool vivado
 create_clock -period 300MHz -name default

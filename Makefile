@@ -22,6 +22,8 @@ static:
 	vivado -mode tcl -source 8v3_shell/create_mig_shell.tcl 
 
 pr_modify:
+	vivado_hls vivado_hls_proj/conv_hls.tcl
+	vivado_hls vivado_hls_proj/fc_hls.tcl
 	vivado -mode gui -source 8v3_shell/create_pr2_0.tcl
 
 
