@@ -17,6 +17,7 @@ extractParams to create new binaries for other layers.
 -util directory has the shared function to read input.
 -vivado_hls_proj contains tcl scripts to create a vivado_hls project for convolution and fc.
 -pci_tests includes tests to read and write to pcie.
+-8v3_shell contains files and projects for the hypervisor and user appplications
 
 To create a project with the sample unoptimized code and run csim and synth design do the following:
 
@@ -40,10 +41,10 @@ The Hypervisor contains the following
 -Partial region to be programmed with partial reconfiguration, contains an AXI-Lite Slave interface to receive control information from PCIe
 and contains an AXI-Master interface connecting to the off-chip memory controller.
 
-To create the hypervisor (must be done before creating an application). This will take about 45 minutes but only needs to be done once.
+NOTE: WE HAVE CREATED THE HYPERVISOR FOR YOU AND IT CAN BE FOUND IN /opt/util/static_routed.dcp
 
-cd ./8v3_shell
-vivado -mode batch -source create_mig_shell.tcl
+Do not create a new hypervisor as you will be sharing this FPGA with your colleagues who will be building with the same hypervisor
+
 
 
 Creating the Data
@@ -64,28 +65,42 @@ We have also provided a driver application that sets up the control registers of
 
 First you need to build the hls ip that will be imported into the partial region.
 
-cd ./vivado_hls_proj
-vivado_hls fc_hls.tcl
-vivado_hls conv_hls.tcl
+
+make pr  -> This will create the vivado_hls projects in vivado_hls_proj,  and create a new application in a partial region using the hypervisor provided.
+           
 
 You can look at the generated slave_axi registers to see which offsets you need to program the control registers.
 For example for the fc look at ./vivado_hls_proj/fc_proj/solution1/impl/verilog/fc_layer_CTRL_BUS_s_axi.v
 
-Now to create the pr_region. We provided one script.
-
-cd ./8v3_shell
-vivado -mode batch -source create_pr2_nn.tcl
-
-This calls two scripts create_pr2_0.tcl and create_pr2_1.tcl
-
-The first script creates the partial application. If you want to modify it. Comment out the sourcing of create_pr2_1.tcl and modify the block diagram.
-
-At this point you can run the test application.
 Look at the Makefile to see the tests. To build for example a sample conv_layer in hardware it is. 
 make 
 ./hw_conv_layer
 
 This writes control registers, copies data into the off-chip memory, starts the application and reads data out. 
+
+
+Creating Your Own Application
+
+Run make pr_modify
+
+This does the same thing as the first half of our make pr. This imports the hypervisor dcp, and makes the example we provided. This then opens the block diagram in the GUI. You can modify the block diagram to import your own IPs. Remember to also modify your addresses for your interconnect in Address Editor.
+Afterwards you will run the following in the tcl console within vivado:
+
+source ./create_pr2_1.tcl 
+
+This will create the wrapper, and synthesize the bitstream. The bitstream generated will be in ./8v3_shell/pr_region_test_pblock_partial.bit. 
+
+
+
+Programming The FPGA
+
+To program the FPGA you will need to use the program script provided in /opt/util/progutil/program.sh
+
+You will give it two arguments, the first being your partial bitstream and the second being the clear bitstream. You will see both in the 8v3_shell directory.
+It is important you give both bitstreams and you use this script to program the partial regions or there is a chance the FPGA gets stuck in a bad state.
+
+
+
 
 Verifying Accuracy
 The above test creates a file in the data directory for each batch layer called dma_out. 
