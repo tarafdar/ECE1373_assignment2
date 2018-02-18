@@ -1,4 +1,4 @@
-open_project fc_proj 
+open_project vivado_hls_proj/fc_proj 
 set_top fc_layer
 add_files fc_test/fc_layer.cpp 
 add_files -tb fc_test/fc_layer_test.cpp -cflags "-I . -std=c++0x"

@@ -1,4 +1,4 @@
-open_project conv_proj
+open_project vivado_hls_proj/conv_proj
 set_top conv_layer 
 add_files conv_test/conv_layer.cpp
 add_files -tb conv_test/conv_layer_test.cpp -cflags "-I .  -std=c++0x"
