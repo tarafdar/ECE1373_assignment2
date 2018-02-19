@@ -13,18 +13,24 @@ hw_fc_layer: fc_test/* util/*
 	g++ -DHW_TEST fc_test/*.cpp fc_test/*.c util/*.cpp -I fc_test -I./ -o hw_fc_layer -std=c++11
 
 
-pr: 
-	vivado_hls vivado_hls_proj/conv_hls.tcl
-	vivado_hls vivado_hls_proj/fc_hls.tcl
+
+pr:     conv_hls fc_hls dcp 
 	vivado -mode tcl -source 8v3_shell/create_pr2_nn.tcl 
+
+pr_modify: conv_hls fc_hls
+	vivado -mode gui -source 8v3_shell/create_pr2_0.tcl
+
+
+conv_hls: conv_test/* util/*
+	vivado_hls vivado_hls_proj/conv_hls.tcl
+
+fc_hls: conv_test/* util/*
+	vivado_hls vivado_hls_proj/conv_hls.tcl
+
 
 static:
 	vivado -mode tcl -source 8v3_shell/create_mig_shell.tcl 
 
-pr_modify:
-	vivado_hls vivado_hls_proj/conv_hls.tcl
-	vivado_hls vivado_hls_proj/fc_hls.tcl
-	vivado -mode gui -source 8v3_shell/create_pr2_0.tcl
 
 
 clean_sw: 
@@ -36,4 +42,8 @@ clean_pr:
 clean_static:
 	rm -rf 8v3_shell/mig_shell_ila_proj
 
+
+dcp: 8v3_shell/static_routed_v1.dcp
+	wget http://www.eecg.toronto.edu/~tarafda1/hypervisors/adm-8v3/static_routed_v1.dcp 8v3_shell/static_routed_v1.dcp
+       
 
