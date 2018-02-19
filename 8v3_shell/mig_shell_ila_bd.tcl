@@ -287,6 +287,7 @@ CONFIG.C_ALL_OUTPUTS {0} \
   # Create instance: axi_smc, and set properties
   set axi_smc [ create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 axi_smc ]
   set_property -dict [ list \
+CONFIG.ADVANCED_PROPERTIES { __view__ { timing { S01_Buffer { AR_M_PIPE 1 AW_M_PIPE 1 W_M_PIPE 1 } } }} \
 CONFIG.NUM_CLKS {2} \
 CONFIG.NUM_SI {2} \
  ] $axi_smc
@@ -302,6 +303,12 @@ CONFIG.C0.DDR4_InputClockPeriod {3332} \
 CONFIG.C0.DDR4_MemoryPart {CUSTOM_MT40A1G8PM-083E} \
 CONFIG.C0.DDR4_isCustom {true} \
  ] $ddr4_0
+
+  # Create instance: decouple_resetn, and set properties
+  set decouple_resetn [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 decouple_resetn ]
+  set_property -dict [ list \
+CONFIG.C_SIZE {1} \
+ ] $decouple_resetn
 
   # Create instance: pr_decoupler_0, and set properties
   set pr_decoupler_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:pr_decoupler:1.0 pr_decoupler_0 ]
@@ -350,6 +357,9 @@ CONFIG.GUI_SIGNAL_SELECT_9 {WREADY} \
   # Create instance: pr_region
   create_hier_cell_pr_region [current_bd_instance .] pr_region
 
+  # Create instance: proc_sys_reset_0, and set properties
+  set proc_sys_reset_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 proc_sys_reset_0 ]
+
   # Create instance: rst_ddr4_0_300M, and set properties
   set rst_ddr4_0_300M [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ddr4_0_300M ]
 
@@ -366,12 +376,6 @@ CONFIG.C_NUM_MONITOR_SLOTS {2} \
 CONFIG.C_BUF_TYPE {IBUFDSGTE} \
  ] $util_ds_buf
 
-  # Create instance: util_vector_logic_0, and set properties
-  set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
-  set_property -dict [ list \
-CONFIG.C_SIZE {1} \
- ] $util_vector_logic_0
-
   # Create instance: util_vector_logic_1, and set properties
   set util_vector_logic_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_1 ]
   set_property -dict [ list \
@@ -386,6 +390,7 @@ CONFIG.LOGO_FILE {data/sym_notgate.png} \
 CONFIG.C_EN_PROBE_IN_ACTIVITY {0} \
 CONFIG.C_NUM_PROBE_IN {1} \
 CONFIG.C_NUM_PROBE_OUT {2} \
+CONFIG.C_PROBE_OUT0_INIT_VAL {0x0} \
 CONFIG.C_PROBE_OUT1_WIDTH {32} \
  ] $vio_0
 
@@ -412,6 +417,7 @@ CONFIG.xdma_wnum_chnl {4} \
   # Create instance: xdma_0_axi_periph, and set properties
   set xdma_0_axi_periph [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 xdma_0_axi_periph ]
   set_property -dict [ list \
+CONFIG.M00_HAS_REGSLICE {4} \
 CONFIG.NUM_MI {3} \
  ] $xdma_0_axi_periph
 
@@ -433,21 +439,22 @@ connect_bd_intf_net -intf_net [get_bd_intf_nets pr_decoupler_0_s_gmem] [get_bd_i
   connect_bd_intf_net -intf_net xdma_0_pcie_mgt [get_bd_intf_ports pcie_7x_mgt_rtl] [get_bd_intf_pins xdma_0/pcie_mgt]
 
   # Create port connections
-  connect_bd_net -net S00_ACLK_1 [get_bd_pins axi_smc/aclk1] [get_bd_pins vio_0/clk] [get_bd_pins xdma_0/axi_aclk] [get_bd_pins xdma_0_axi_periph/S00_ACLK]
-  connect_bd_net -net S00_ARESETN_1 [get_bd_pins pr_region/S00_ARESETN] [get_bd_pins util_vector_logic_0/Res]
-  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins axi_gpio_0/s_axi_aclk] [get_bd_pins axi_smc/aclk] [get_bd_pins ddr4_0/c0_ddr4_ui_clk] [get_bd_pins pr_decoupler_0/aclk] [get_bd_pins pr_region/S00_ACLK] [get_bd_pins rst_ddr4_0_300M/slowest_sync_clk] [get_bd_pins system_ila_0/clk] [get_bd_pins xdma_0_axi_periph/ACLK] [get_bd_pins xdma_0_axi_periph/M00_ACLK] [get_bd_pins xdma_0_axi_periph/M01_ACLK] [get_bd_pins xdma_0_axi_periph/M02_ACLK]
-  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk_sync_rst [get_bd_pins ddr4_0/c0_ddr4_ui_clk_sync_rst] [get_bd_pins rst_ddr4_0_300M/ext_reset_in]
+  connect_bd_net -net S00_ACLK_1 [get_bd_pins axi_gpio_0/s_axi_aclk] [get_bd_pins axi_smc/aclk1] [get_bd_pins pr_decoupler_0/aclk] [get_bd_pins pr_region/S00_ACLK] [get_bd_pins rst_ddr4_0_300M/slowest_sync_clk] [get_bd_pins system_ila_0/clk] [get_bd_pins vio_0/clk] [get_bd_pins xdma_0/axi_aclk] [get_bd_pins xdma_0_axi_periph/ACLK] [get_bd_pins xdma_0_axi_periph/M00_ACLK] [get_bd_pins xdma_0_axi_periph/M01_ACLK] [get_bd_pins xdma_0_axi_periph/M02_ACLK] [get_bd_pins xdma_0_axi_periph/S00_ACLK]
+  connect_bd_net -net S00_ARESETN_1 [get_bd_pins decouple_resetn/Res] [get_bd_pins pr_region/S00_ARESETN]
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk [get_bd_pins axi_smc/aclk] [get_bd_pins ddr4_0/c0_ddr4_ui_clk] [get_bd_pins proc_sys_reset_0/slowest_sync_clk]
+  connect_bd_net -net ddr4_0_c0_ddr4_ui_clk_sync_rst [get_bd_pins ddr4_0/c0_ddr4_ui_clk_sync_rst] [get_bd_pins proc_sys_reset_0/aux_reset_in] [get_bd_pins rst_ddr4_0_300M/aux_reset_in]
   connect_bd_net -net ddr4_0_c0_init_calib_complete [get_bd_pins ddr4_0/c0_init_calib_complete] [get_bd_pins vio_0/probe_in0]
   connect_bd_net -net pr_decoupler_0_decouple_status [get_bd_pins pr_decoupler_0/decouple_status] [get_bd_pins util_vector_logic_1/Op1]
+  connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins ddr4_0/c0_ddr4_aresetn] [get_bd_pins proc_sys_reset_0/peripheral_aresetn]
   connect_bd_net -net reset_rtl_1 [get_bd_ports reset_rtl] [get_bd_pins xdma_0/sys_rst_n]
+  connect_bd_net -net resetn_gate_Res [get_bd_pins axi_smc/aresetn] [get_bd_pins proc_sys_reset_0/ext_reset_in] [get_bd_pins rst_ddr4_0_300M/ext_reset_in] [get_bd_pins xdma_0/axi_aresetn] [get_bd_pins xdma_0_axi_periph/S00_ARESETN]
   connect_bd_net -net rst_ddr4_0_300M_interconnect_aresetn [get_bd_pins pr_decoupler_0/s_axi_reg_aresetn] [get_bd_pins rst_ddr4_0_300M/interconnect_aresetn] [get_bd_pins system_ila_0/resetn] [get_bd_pins xdma_0_axi_periph/ARESETN]
-  connect_bd_net -net rst_ddr4_0_300M_peripheral_aresetn [get_bd_pins axi_gpio_0/s_axi_aresetn] [get_bd_pins ddr4_0/c0_ddr4_aresetn] [get_bd_pins rst_ddr4_0_300M/peripheral_aresetn] [get_bd_pins util_vector_logic_0/Op2] [get_bd_pins xdma_0_axi_periph/M00_ARESETN] [get_bd_pins xdma_0_axi_periph/M01_ARESETN] [get_bd_pins xdma_0_axi_periph/M02_ARESETN]
+  connect_bd_net -net rst_ddr4_0_300M_peripheral_aresetn [get_bd_pins axi_gpio_0/s_axi_aresetn] [get_bd_pins decouple_resetn/Op2] [get_bd_pins rst_ddr4_0_300M/peripheral_aresetn] [get_bd_pins xdma_0_axi_periph/M00_ARESETN] [get_bd_pins xdma_0_axi_periph/M01_ARESETN] [get_bd_pins xdma_0_axi_periph/M02_ARESETN]
   connect_bd_net -net util_ds_buf_IBUF_DS_ODIV2 [get_bd_pins util_ds_buf/IBUF_DS_ODIV2] [get_bd_pins xdma_0/sys_clk]
   connect_bd_net -net util_ds_buf_IBUF_OUT [get_bd_pins util_ds_buf/IBUF_OUT] [get_bd_pins xdma_0/sys_clk_gt]
-  connect_bd_net -net util_vector_logic_1_Res [get_bd_pins util_vector_logic_0/Op1] [get_bd_pins util_vector_logic_1/Res]
+  connect_bd_net -net util_vector_logic_1_Res [get_bd_pins decouple_resetn/Op1] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net vio_0_probe_out0 [get_bd_pins ddr4_0/sys_rst] [get_bd_pins vio_0/probe_out0]
   connect_bd_net -net vio_0_probe_out1 [get_bd_pins axi_gpio_0/gpio_io_i] [get_bd_pins vio_0/probe_out1]
-  connect_bd_net -net xdma_0_axi_aresetn [get_bd_pins axi_smc/aresetn] [get_bd_pins rst_ddr4_0_300M/aux_reset_in] [get_bd_pins xdma_0/axi_aresetn] [get_bd_pins xdma_0_axi_periph/S00_ARESETN]
 
   # Create address segments
   create_bd_addr_seg -range 0x00010000 -offset 0x00090000 [get_bd_addr_spaces xdma_0/M_AXI_LITE] [get_bd_addr_segs axi_gpio_0/S_AXI/Reg] SEG_axi_gpio_0_Reg
