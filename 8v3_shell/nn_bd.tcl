@@ -158,7 +158,7 @@ proc create_root_design { parentCell } {
 CONFIG.ADDR_WIDTH {64} \
 CONFIG.CLK_DOMAIN {static_region_xdma_0_0_axi_aclk} \
 CONFIG.DATA_WIDTH {128} \
-CONFIG.FREQ_HZ {300000000} \
+CONFIG.FREQ_HZ {250000000} \
 CONFIG.HAS_BURST {0} \
 CONFIG.HAS_REGION {0} \
 CONFIG.PROTOCOL {AXI4} \
@@ -171,7 +171,7 @@ CONFIG.AWUSER_WIDTH {0} \
 CONFIG.BUSER_WIDTH {0} \
 CONFIG.CLK_DOMAIN {static_region_xdma_0_0_axi_aclk} \
 CONFIG.DATA_WIDTH {32} \
-CONFIG.FREQ_HZ {300000000} \
+CONFIG.FREQ_HZ {250000000} \
 CONFIG.HAS_BRESP {1} \
 CONFIG.HAS_BURST {0} \
 CONFIG.HAS_CACHE {0} \
@@ -198,24 +198,29 @@ CONFIG.WUSER_WIDTH {0} \
 
   # Create ports
   set S00_ARESETN [ create_bd_port -dir I -type rst S00_ARESETN ]
-  set c0_ddr4_ui_clk [ create_bd_port -dir I -type clk c0_ddr4_ui_clk ]
+  set axi_aclk [ create_bd_port -dir I -type clk axi_aclk ]
   set_property -dict [ list \
 CONFIG.ASSOCIATED_RESET {rst:Res} \
 CONFIG.CLK_DOMAIN {static_region_xdma_0_0_axi_aclk} \
-CONFIG.FREQ_HZ {300000000} \
- ] $c0_ddr4_ui_clk
+CONFIG.FREQ_HZ {250000000} \
+ ] $axi_aclk
 
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
   set_property -dict [ list \
 CONFIG.NUM_MI {2} \
+CONFIG.S00_HAS_DATA_FIFO {0} \
+CONFIG.S00_HAS_REGSLICE {4} \
  ] $axi_interconnect_0
 
   # Create instance: axi_interconnect_1, and set properties
   set axi_interconnect_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_1 ]
   set_property -dict [ list \
+CONFIG.M00_HAS_REGSLICE {4} \
 CONFIG.NUM_MI {1} \
 CONFIG.NUM_SI {2} \
+CONFIG.S00_HAS_REGSLICE {3} \
+CONFIG.S01_HAS_REGSLICE {3} \
  ] $axi_interconnect_1
 
   # Create instance: conv_layer_0, and set properties
@@ -271,7 +276,7 @@ CONFIG.NUM_WRITE_OUTSTANDING {1} \
   connect_bd_intf_net -intf_net s_axi_1 [get_bd_intf_ports s_axi] [get_bd_intf_pins pcl_axilite_bridge_0/s_axi]
 
   # Create port connections
-  connect_bd_net -net S00_ACLK_1 [get_bd_ports c0_ddr4_ui_clk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_1/ACLK] [get_bd_pins axi_interconnect_1/M00_ACLK] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins axi_interconnect_1/S01_ACLK] [get_bd_pins conv_layer_0/ap_clk] [get_bd_pins fc_layer_0/ap_clk] [get_bd_pins pcl_axifull_bridge_0/aclk] [get_bd_pins pcl_axilite_bridge_0/aclk] [get_bd_pins proc_sys_reset_0/slowest_sync_clk]
+  connect_bd_net -net S00_ACLK_1 [get_bd_ports axi_aclk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_1/ACLK] [get_bd_pins axi_interconnect_1/M00_ACLK] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins axi_interconnect_1/S01_ACLK] [get_bd_pins conv_layer_0/ap_clk] [get_bd_pins fc_layer_0/ap_clk] [get_bd_pins pcl_axifull_bridge_0/aclk] [get_bd_pins pcl_axilite_bridge_0/aclk] [get_bd_pins proc_sys_reset_0/slowest_sync_clk]
   connect_bd_net -net S00_ARESETN_1 [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins axi_interconnect_1/S00_ARESETN] [get_bd_pins axi_interconnect_1/S01_ARESETN] [get_bd_pins pcl_axifull_bridge_0/aresetn] [get_bd_pins pcl_axilite_bridge_0/aresetn] [get_bd_pins proc_sys_reset_0/interconnect_aresetn]
   connect_bd_net -net S00_ARESETN_2 [get_bd_ports S00_ARESETN] [get_bd_pins proc_sys_reset_0/ext_reset_in]
   connect_bd_net -net proc_sys_reset_0_peripheral_aresetn [get_bd_pins conv_layer_0/ap_rst_n] [get_bd_pins fc_layer_0/ap_rst_n] [get_bd_pins proc_sys_reset_0/peripheral_aresetn]
