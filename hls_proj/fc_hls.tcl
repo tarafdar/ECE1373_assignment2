@@ -1,8 +1,8 @@
-cd vivado_hls_proj
-open_project conv_proj
-set_top conv_layer 
-add_files ../conv_test/conv_layer.cpp
-add_files -tb ../conv_test/conv_layer_test.cpp -cflags "-I .  -std=c++0x"
+cd hls_proj
+open_project fc_proj 
+set_top fc_layer
+add_files ../fc_test/fc_layer.cpp 
+add_files -tb ../fc_test/fc_layer_test.cpp -cflags "-I . -std=c++0x"
 add_files -tb ../util/shared.cpp
 add_files -tb ../data
 open_solution "solution1"

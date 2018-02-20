@@ -1,3 +1,7 @@
+DCP = static_routed_v1.dcp
+PR_SRCS = conv_test/conv_layer.cpp conv_test/conv_layer.h fc_test/fc_layer.cpp fc_test/fc_layer.h 8v3_shell/create_pr2_nn.tcl 8v3_shell/create_pr2_0.tcl 8v3_shell/create_pr2_1.tcl 8v3_shell/pr_region_2_bd.tcl
+
+
 all: conv_layer fc_layer hw_conv_layer hw_fc_layer
 
 conv_layer: conv_test/* util/*
@@ -13,24 +17,23 @@ hw_fc_layer: fc_test/* util/*
 	g++ -DHW_TEST fc_test/*.cpp fc_test/*.c util/*.cpp -I fc_test -I./ -o hw_fc_layer -std=c++11
 
 
+conv_hls: conv_test/* util/* 
+	vivado_hls hls_proj/conv_hls.tcl
 
-pr:     conv_hls fc_hls dcp 
-	vivado -mode tcl -source 8v3_shell/create_pr2_nn.tcl 
+fc_hls: conv_test/*  util/*
+	vivado_hls hls_proj/conv_hls.tcl
 
-pr_modify: conv_hls fc_hls
-	vivado -mode gui -source 8v3_shell/create_pr2_0.tcl
+pr:     $(PR_SRCS) dcp conv_hls fc_hls 
+	vivado -mode tcl -source 8v3_shell/create_pr2_nn.tcl -tclargs $(DCP) 
+
+pr_modify: $(PR_SRCS) dcp conv_hls fc_hls 
+	vivado -mode gui -source 8v3_shell/create_pr2_0.tcl -tclargs $(DCP)
 
 
-conv_hls: conv_test/* util/*
-	vivado_hls vivado_hls_proj/conv_hls.tcl
-
-fc_hls: conv_test/* util/*
-	vivado_hls vivado_hls_proj/conv_hls.tcl
 
 
 static:
 	vivado -mode tcl -source 8v3_shell/create_mig_shell.tcl 
-
 
 
 clean_sw: 
@@ -42,8 +45,11 @@ clean_pr:
 clean_static:
 	rm -rf 8v3_shell/mig_shell_ila_proj
 
+clean_dcp:
+	rm -rf 8v3_shell/$(DCP)
 
-dcp: 8v3_shell/static_routed_v1.dcp
-	wget http://www.eecg.toronto.edu/~tarafda1/hypervisors/adm-8v3/static_routed_v1.dcp 8v3_shell/static_routed_v1.dcp
+
+dcp: 
+	ls 8v3_shell/$(DCP) 2> /dev/null &&  echo "File exists" || (wget http://www.eecg.toronto.edu/~tarafda1/hypervisors/adm-8v3/${DCP} && mv ${DCP} 8v3_shell/) 
        
 
