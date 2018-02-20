@@ -5,7 +5,7 @@ Welcome to the second assignment in ECE1373
 This will describe how to run the provided sample code in this directory. 
 This description assumes you have read the assignment handout in doc/assignment2.pdf
 
-##Code Organization
+## Code Organization
 
 The source code is organized as follows:
 - fc directory has files for fully connected layer
@@ -21,7 +21,7 @@ To create a project with the sample unoptimized code and run csim and synth desi
 
 ## Pre-requisites
 
-1. Install vivado 2017.2 in /opt/  (Already done in the container
+1. Install vivado 2017.2 in /opt/  (Already done in the container)
 2. Install caffe in /opt/  (Already done in the container)
 3. ``source sourceme.sh`` 
 
