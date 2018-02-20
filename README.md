@@ -36,7 +36,7 @@ The Hypervisor contains the following:
 - An off-chip memory controller interfacing with 8GB of off-chip memory (first 2 GB is shared with PCIe addressable space)
 - Partial region to be programmed with partial reconfiguration, contains an AXI-Lite Slave interface to receive control information from PCIe and contains an AXI-Master interface connecting to the off-chip memory controller.
 
-**NOTE: WE HAVE CREATED THE HYPERVISOR FOR YOU AND IT CAN BE FOUND IN http://www.eecg.toronto.edu/~tarafda1/hypervisors/adm-8v3/static_routed_v1.dcp **
+**NOTE: WE HAVE CREATED THE HYPERVISOR FOR YOU AND IT CAN BE FOUND IN http://www.eecg.toronto.edu/~tarafda1/hypervisors/adm-8v3/static_routed_v1.dcp** 
 
 Do not create a new hypervisor as you will be sharing this FPGA with your colleagues who will be building with the same hypervisor
 The Makefile is modified to pull the DCP as needed. 
@@ -44,26 +44,24 @@ The Makefile is modified to pull the DCP as needed.
 
 ## Creating the Data
 
-To create the data run the extractParams_imagenet.py in the nn_params directory. 
-You can as an argument provide the number of batches, and the network model.
-To specify the batch size, you can modify the model file.
-This creates a directory per batch in the data/vgg_batches/ directory.
-Each batch contains the input, output, weights, biases, a description of the parameters for each layer, and the labels for the images.
+To create the data run the nn_params/extractParams_imagenet.py from the project root. You can specify additinal args (optionally)
 
+``python nn_params/extractParams_imagenet.py --total_batches <number of batches> --model <location of deploy.txt>  --weights <location of caffemodel (weights)> --mean_file <location of mean file> --image_root <location of where you would like to dump your batch data> --imagenet_val_path <location of imagenet database>``
+
+All of these are optional flags. The rest of the test applications assume the current locations of where the images are being dumped, so it is recommended that you do not input any flags to begin with.
+
+``python nn_params/extractParams_imagenet.py``
 
 
 ## Running an Example
 
 We have provided an example with PCIe connecting to a convolution layer and an fc layer directly through PCIe. These modules are using only off-chip memory
 to communicate with the host. (is this the best way to do it?)
-We have verified functionality of the fully-connected layer (conv-layer is untested).
-We have also provided a driver application that sets up the control registers of the fully-connected layer.
-
-First you need to build the hls ip that will be imported into the partial region.
+We have verified functionality on both the conv and fc layer.
 
 
 ``make pr``  
-- This will create the vivado_hls projects in vivado_hls_proj,  and create a new application in a partial region using the hypervisor provided.
+- This will create the vivado_hls projects in hls_proj,  and create a new application in a partial region using the hypervisor provided.
            
 
 You can look at the generated slave_axi registers to see which offsets you need to program the control registers.
@@ -106,3 +104,13 @@ Programming template:
 The above test creates a file in the data directory for each batch layer called dma_out. 
 The nn_params/softMax.py script pumps the data out of the last fully connected layer  through a softmax and compares the results with the label information.
 This will give you an accuracy result of your network. 
+
+To verify accuracy you can run the following:
+
+``python nn_params/softMax.py --total_batches <number of batches> --model <location of deploy.txt>  --weights <location of caffemodel (weights)> --image_root_path <location of where you would like to dump your batch data> --last_fc <the name of the fully connected layer before the softmax> --softmax <name of the softmax layer>``
+
+Like the above python script in generating data, the default parameters are what you would be using for this assignment so:
+
+``python nn_params/softMax.py``
+
+Will suffice
