@@ -1,4 +1,4 @@
-# ECE1373_assignment2
+# ECE1373_assignment2 - Integrating Neural Networks on an FPGA Accelerator System
 
 Welcome to the second assignment in ECE1373
 
