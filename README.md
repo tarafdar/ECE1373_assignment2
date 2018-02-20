@@ -19,7 +19,7 @@ The source code is organized as follows:
 To create a project with the sample unoptimized code and run csim and synth design do the following:
 
 
-##Pre-requisites
+## Pre-requisites
 
 1. Install vivado 2017.2 in /opt/  (Already done in the container
 2. Install caffe in /opt/  (Already done in the container)
@@ -27,7 +27,7 @@ To create a project with the sample unoptimized code and run csim and synth desi
 
 
 
-##FPGA Hypervisor 
+## FPGA Hypervisor 
 
 We use partial reconfiguration to program your applcation into an already programmed FPGA (we call this the Hypervisor)
 The Hypervisor contains the following:
@@ -42,7 +42,7 @@ Do not create a new hypervisor as you will be sharing this FPGA with your collea
 The Makefile is modified to pull the DCP as needed. 
 
 
-##Creating the Data
+## Creating the Data
 
 To create the data run the extractParams_imagenet.py in the nn_params directory. 
 You can as an argument provide the number of batches, and the network model.
@@ -52,7 +52,7 @@ Each batch contains the input, output, weights, biases, a description of the par
 
 
 
-##Running an Example
+## Running an Example
 
 We have provided an example with PCIe connecting to a convolution layer and an fc layer directly through PCIe. These modules are using only off-chip memory
 to communicate with the host. (is this the best way to do it?)
@@ -76,7 +76,7 @@ make
 This writes control registers, copies data into the off-chip memory, starts the application and reads data out. 
 
 
-##Creating Your Own Application
+## Creating Your Own Application
 
 Run the following:
 ``make pr_modify``
@@ -90,7 +90,7 @@ This will create the wrapper, and synthesize the bitstream. The bitstream genera
 
 
 
-##Programming The FPGA
+## Programming The FPGA
 
 To program the FPGA you will need to use the program script provided in /opt/util/progutil/program.sh
 
@@ -101,7 +101,7 @@ Programming template:
 ``/opt/util/prog_util/program.sh <partial.bit file> <partial_clear.bit file>``
 
 
-##Verifying Accuracy
+## Verifying Accuracy
 
 The above test creates a file in the data directory for each batch layer called dma_out. 
 The nn_params/softMax.py script pumps the data out of the last fully connected layer  through a softmax and compares the results with the label information.
