@@ -48,6 +48,7 @@ if { $list_projs eq "" } {
 
 
 # CHANGE DESIGN NAME HERE
+variable design_name
 set design_name static_region
 
 # If you do not already have an existing IP Integrator design open,
@@ -115,6 +116,72 @@ if { $nRet != 0 } {
    return $nRet
 }
 
+set bCheckIPsPassed 1
+##################################################################
+# CHECK IPs
+##################################################################
+set bCheckIPs 1
+if { $bCheckIPs == 1 } {
+   set list_check_ips "\ 
+xilinx.com:ip:axi_gpio:2.0\
+xilinx.com:ip:smartconnect:1.0\
+xilinx.com:ip:ddr4:2.2\
+xilinx.com:ip:util_vector_logic:2.0\
+xilinx.com:ip:pr_decoupler:1.0\
+xilinx.com:ip:proc_sys_reset:5.0\
+xilinx.com:ip:system_ila:1.1\
+xilinx.com:ip:util_ds_buf:2.1\
+xilinx.com:ip:vio:3.0\
+xilinx.com:ip:xdma:4.1\
+xilinx.com:hls:dummy1:1.0\
+xilinx.com:ip:pcl_axifull_bridge:1.0\
+xilinx.com:ip:pcl_axilite_bridge:1.0\
+"
+
+   set list_ips_missing ""
+   common::send_msg_id "BD_TCL-006" "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
+
+   foreach ip_vlnv $list_check_ips {
+      set ip_obj [get_ipdefs -all $ip_vlnv]
+      if { $ip_obj eq "" } {
+         lappend list_ips_missing $ip_vlnv
+      }
+   }
+
+   if { $list_ips_missing ne "" } {
+      catch {common::send_msg_id "BD_TCL-115" "ERROR" "The following IPs are not found in the IP Catalog:\n  $list_ips_missing\n\nResolution: Please add the repository containing the IP(s) to the project." }
+      set bCheckIPsPassed 0
+   }
+
+}
+
+if { $bCheckIPsPassed != 1 } {
+  common::send_msg_id "BD_TCL-1003" "WARNING" "Will not continue with creation of design due to the error(s) above."
+  return 3
+}
+
+
+##################################################################
+# DATA FILE TCL PROCs
+##################################################################
+
+proc write_ddr4_file_static_region_ddr4_0_0 { str_filepath } {
+
+   file mkdir [ file dirname "$str_filepath" ]
+   set data_file [open $str_filepath  w+]
+
+   puts $data_file {Part type,Part name,Rank,StackHeight,CA Mirror,Data mask,Address width,Row width,Column width,Bank width,Bank group width,CS width,CKE width,ODT width,CK width,Memory speed grade,Memory density,Component density,Memory device width,Memory component width,Data bits per strobe,IO Voltages,Data widths,Min period,Max period,tCKE,tFAW,tFAW_dlr,tMRD,tRAS,tRCD,tREFI,tRFC,tRFC_dlr,tRP,tRRD_S,tRRD_L,tRRD_dlr,tRTP,tWR,tWTR_S,tWTR_L,tXPR,tZQCS,tZQINIT,tCCD_3ds,cas latency,cas write latency,burst length,RTT (nominal) - ODT}
+   puts $data_file {Components,CUSTOM_MT40A1G8PM-083E,1,1,0,1,17,16,10,2,2,1,1,1,1,083E,8Gb,8Gb,8,8,8,1.2V,"64,72",833,1600,5000 ps,21000 ps,0,8 tck,32000 ps,13320 ps,7800000 ps,350000 ps,0,13320 ps,3300 ps,4900 ps,0,7500 ps,15000 ps,2500 ps,7500 ps,360 ns,128 tck,1024 tck,0,"17","12",8,RZQ/6}
+   puts $data_file {Components,CUSTOM_DBI_MT40A1G8PM-083E,1,1,0,1,17,16,10,2,2,1,1,1,1,083E,8Gb,8Gb,8,8,8,1.2V,"64,72",833,1600,5000 ps,21000 ps,0,8 tck,32000 ps,13320 ps,7800000 ps,350000 ps,0,13320 ps,3300 ps,4900 ps,0,7500 ps,15000 ps,2500 ps,7500 ps,360 ns,128 tck,1024 tck,0,"20","12",8,RZQ/6}
+   puts $data_file {Components,CUSTOM_K4A8G085WB-RC,1,1,0,1,17,16,10,2,2,1,1,1,1,083,8Gb,8Gb,8,8,8,1.2V,"64,72",833,1600,5000 ps,21000 ps,0,8 tck,32000 ps,14160 ps,7800000 ps,350000 ps,0,14160 ps,3300 ps,4900 ps,0,7500 ps,15000 ps,2500 ps,7500 ps,360 ns,128 tck,1024 tck,0,"17","12",8,RZQ/6}
+   puts $data_file {Components,CUSTOM_DBI_K4A8G085WB-RC,1,1,0,1,17,16,10,2,2,1,1,1,1,083,8Gb,8Gb,8,8,8,1.2V,"64,72",833,1600,5000 ps,21000 ps,0,8 tck,32000 ps,14160 ps,7800000 ps,350000 ps,0,14160 ps,3300 ps,4900 ps,0,7500 ps,15000 ps,2500 ps,7500 ps,360 ns,128 tck,1024 tck,0,"20","12",8,RZQ/6}
+
+   close $data_file
+}
+# End of write_ddr4_file_static_region_ddr4_0_0()
+
+
+
 ##################################################################
 # DESIGN PROCs
 ##################################################################
@@ -165,46 +232,32 @@ proc create_hier_cell_pr_region { parentCell nameHier } {
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
   set_property -dict [ list \
-CONFIG.NUM_MI {1} \
+   CONFIG.NUM_MI {1} \
  ] $axi_interconnect_0
 
   # Create instance: axi_interconnect_1, and set properties
   set axi_interconnect_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_1 ]
   set_property -dict [ list \
-CONFIG.NUM_MI {1} \
-CONFIG.NUM_SI {1} \
+   CONFIG.NUM_MI {1} \
+   CONFIG.NUM_SI {1} \
  ] $axi_interconnect_1
 
   # Create instance: dummy1_0, and set properties
   set dummy1_0 [ create_bd_cell -type ip -vlnv xilinx.com:hls:dummy1:1.0 dummy1_0 ]
 
-  set_property -dict [ list \
-CONFIG.NUM_READ_OUTSTANDING {1} \
-CONFIG.NUM_WRITE_OUTSTANDING {1} \
- ] [get_bd_intf_pins /pr_region/dummy1_0/s_axi_ctrl]
-
   # Create instance: pcl_axifull_bridge_0, and set properties
   set pcl_axifull_bridge_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:pcl_axifull_bridge:1.0 pcl_axifull_bridge_0 ]
   set_property -dict [ list \
-CONFIG.ADDR_WIDTH {64} \
-CONFIG.DATA_WIDTH {128} \
-CONFIG.S_ID_WIDTH {5} \
+   CONFIG.ADDR_WIDTH {64} \
+   CONFIG.DATA_WIDTH {128} \
+   CONFIG.S_ID_WIDTH {5} \
  ] $pcl_axifull_bridge_0
 
   # Create instance: pcl_axilite_bridge_0, and set properties
   set pcl_axilite_bridge_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:pcl_axilite_bridge:1.0 pcl_axilite_bridge_0 ]
   set_property -dict [ list \
-CONFIG.ADDR_WIDTH {19} \
+   CONFIG.ADDR_WIDTH {19} \
  ] $pcl_axilite_bridge_0
-
-  set_property -dict [ list \
-CONFIG.MAX_BURST_LENGTH {1} \
- ] [get_bd_intf_pins /pr_region/pcl_axilite_bridge_0/m_axi]
-
-  set_property -dict [ list \
-CONFIG.NUM_READ_OUTSTANDING {1} \
-CONFIG.NUM_WRITE_OUTSTANDING {1} \
- ] [get_bd_intf_pins /pr_region/pcl_axilite_bridge_0/s_axi]
 
   # Create instance: proc_sys_reset_0, and set properties
   set proc_sys_reset_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 proc_sys_reset_0 ]
@@ -233,6 +286,7 @@ CONFIG.NUM_WRITE_OUTSTANDING {1} \
 proc create_root_design { parentCell } {
 
   variable script_folder
+  variable design_name
 
   if { $parentCell eq "" } {
      set parentCell [get_bd_cells /]
@@ -263,95 +317,103 @@ proc create_root_design { parentCell } {
   set c0_ddr4 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 c0_ddr4 ]
   set c0_sys_clk [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 c0_sys_clk ]
   set_property -dict [ list \
-CONFIG.FREQ_HZ {300120000} \
- ] $c0_sys_clk
+   CONFIG.FREQ_HZ {300120000} \
+   ] $c0_sys_clk
   set pcie_7x_mgt_rtl [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:pcie_7x_mgt_rtl:1.0 pcie_7x_mgt_rtl ]
   set pcie_clk [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 pcie_clk ]
   set_property -dict [ list \
-CONFIG.FREQ_HZ {100000000} \
- ] $pcie_clk
+   CONFIG.FREQ_HZ {100000000} \
+   ] $pcie_clk
 
   # Create ports
   set reset_rtl [ create_bd_port -dir I -type rst reset_rtl ]
   set_property -dict [ list \
-CONFIG.POLARITY {ACTIVE_LOW} \
+   CONFIG.POLARITY {ACTIVE_LOW} \
  ] $reset_rtl
 
   # Create instance: axi_gpio_0, and set properties
   set axi_gpio_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_gpio:2.0 axi_gpio_0 ]
   set_property -dict [ list \
-CONFIG.C_ALL_INPUTS {1} \
-CONFIG.C_ALL_OUTPUTS {0} \
+   CONFIG.C_ALL_INPUTS {1} \
+   CONFIG.C_ALL_OUTPUTS {0} \
  ] $axi_gpio_0
 
   # Create instance: axi_smc, and set properties
   set axi_smc [ create_bd_cell -type ip -vlnv xilinx.com:ip:smartconnect:1.0 axi_smc ]
   set_property -dict [ list \
-CONFIG.ADVANCED_PROPERTIES { __view__ { timing { S01_Buffer { AR_M_PIPE 1 AW_M_PIPE 1 W_M_PIPE 1 } } }} \
-CONFIG.NUM_CLKS {2} \
-CONFIG.NUM_SI {2} \
+   CONFIG.ADVANCED_PROPERTIES { __view__ { timing { S01_Buffer { AR_M_PIPE 1 AW_M_PIPE 1 W_M_PIPE 1 } } }} \
+   CONFIG.NUM_CLKS {2} \
+   CONFIG.NUM_SI {2} \
  ] $axi_smc
 
   # Create instance: ddr4_0, and set properties
   set ddr4_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:ddr4:2.2 ddr4_0 ]
+
+   # Generate the DDR4 Custom Parts File
+   set str_ddr4_folder [get_property IP_DIR [ get_ips [ get_property CONFIG.Component_Name $ddr4_0 ] ] ]
+   set str_ddr4_file_name adm-pcie-8v3_custom_parts_2400.csv
+   set str_ddr4_file_path ${str_ddr4_folder}/${str_ddr4_file_name}
+
+   write_ddr4_file_static_region_ddr4_0_0 $str_ddr4_file_path
+
   set_property -dict [ list \
-CONFIG.C0.DDR4_AxiAddressWidth {33} \
-CONFIG.C0.DDR4_AxiDataWidth {512} \
-CONFIG.C0.DDR4_CustomParts {../../../../../../../adm-pcie-8v3_custom_parts_2400.csv} \
-CONFIG.C0.DDR4_DataWidth {64} \
-CONFIG.C0.DDR4_InputClockPeriod {3332} \
-CONFIG.C0.DDR4_MemoryPart {CUSTOM_MT40A1G8PM-083E} \
-CONFIG.C0.DDR4_isCustom {true} \
+   CONFIG.C0.DDR4_AxiAddressWidth {33} \
+   CONFIG.C0.DDR4_AxiDataWidth {512} \
+   CONFIG.C0.DDR4_CustomParts {adm-pcie-8v3_custom_parts_2400.csv} \
+   CONFIG.C0.DDR4_DataWidth {64} \
+   CONFIG.C0.DDR4_InputClockPeriod {3332} \
+   CONFIG.C0.DDR4_MemoryPart {CUSTOM_MT40A1G8PM-083E} \
+   CONFIG.C0.DDR4_isCustom {true} \
  ] $ddr4_0
 
   # Create instance: decouple_resetn, and set properties
   set decouple_resetn [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 decouple_resetn ]
   set_property -dict [ list \
-CONFIG.C_SIZE {1} \
+   CONFIG.C_SIZE {1} \
  ] $decouple_resetn
 
   # Create instance: pr_decoupler_0, and set properties
   set pr_decoupler_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:pr_decoupler:1.0 pr_decoupler_0 ]
   set_property -dict [ list \
-CONFIG.ALL_PARAMS {HAS_AXI_LITE 1 HAS_SIGNAL_CONTROL 0 HAS_SIGNAL_STATUS 1 INTF {gmem {ID 0 VLNV xilinx.com:interface:aximm_rtl:1.0 SIGNALS {ARVALID {PRESENT 1 WIDTH 1} ARREADY {PRESENT 1 WIDTH 1} AWVALID {PRESENT 1 WIDTH 1} AWREADY {PRESENT 1 WIDTH 1} BVALID {PRESENT 1 WIDTH 1} BREADY {PRESENT 1 WIDTH 1} RVALID {PRESENT 1 WIDTH 1} RREADY {PRESENT 1 WIDTH 1} WVALID {PRESENT 1 WIDTH 1} WREADY {PRESENT 1 WIDTH 1} AWID {PRESENT 1 WIDTH 5} AWADDR {PRESENT 1 WIDTH 64} AWLEN {PRESENT 1 WIDTH 8} AWSIZE {PRESENT 1 WIDTH 3} AWBURST {PRESENT 1 WIDTH 2} AWLOCK {PRESENT 1 WIDTH 1} AWCACHE {PRESENT 1 WIDTH 4} AWPROT {PRESENT 1 WIDTH 3} AWREGION {PRESENT 1 WIDTH 4} AWQOS {PRESENT 1 WIDTH 4} AWUSER {PRESENT 0 WIDTH 0} WID {PRESENT 1 WIDTH 5} WDATA {PRESENT 1 WIDTH 128} WSTRB {PRESENT 1 WIDTH 16} WLAST {PRESENT 1 WIDTH 1} WUSER {PRESENT 0 WIDTH 0} BID {PRESENT 1 WIDTH 5} BRESP {PRESENT 1 WIDTH 2} BUSER {PRESENT 0 WIDTH 0} ARID {PRESENT 1 WIDTH 5} ARADDR {PRESENT 1 WIDTH 64} ARLEN {PRESENT 1 WIDTH 8} ARSIZE {PRESENT 1 WIDTH 3} ARBURST {PRESENT 1 WIDTH 2} ARLOCK {PRESENT 1 WIDTH 1} ARCACHE {PRESENT 1 WIDTH 4} ARPROT {PRESENT 1 WIDTH 3} ARREGION {PRESENT 1 WIDTH 4} ARQOS {PRESENT 1 WIDTH 4} ARUSER {PRESENT 0 WIDTH 0} RID {PRESENT 1 WIDTH 5} RDATA {PRESENT 1 WIDTH 128} RRESP {PRESENT 1 WIDTH 2} RLAST {PRESENT 1 WIDTH 1} RUSER {PRESENT 0 WIDTH 0}}} ctrl {ID 1 MODE slave VLNV xilinx.com:interface:aximm_rtl:1.0 PROTOCOL axi4lite SIGNALS {ARVALID {PRESENT 1 WIDTH 1} ARREADY {PRESENT 1 WIDTH 1} AWVALID {PRESENT 1 WIDTH 1} AWREADY {PRESENT 1 WIDTH 1} BVALID {PRESENT 1 WIDTH 1} BREADY {PRESENT 1 WIDTH 1} RVALID {PRESENT 1 WIDTH 1} RREADY {PRESENT 1 WIDTH 1} WVALID {PRESENT 1 WIDTH 1} WREADY {PRESENT 1 WIDTH 1} AWADDR {PRESENT 1 WIDTH 32} AWLEN {PRESENT 0 WIDTH 8} AWSIZE {PRESENT 0 WIDTH 3} AWBURST {PRESENT 0 WIDTH 2} AWLOCK {PRESENT 0 WIDTH 1} AWCACHE {PRESENT 0 WIDTH 4} AWPROT {PRESENT 1 WIDTH 3} WDATA {PRESENT 1 WIDTH 32} WSTRB {PRESENT 1 WIDTH 4} WLAST {PRESENT 0 WIDTH 1} BRESP {PRESENT 1 WIDTH 2} ARADDR {PRESENT 1 WIDTH 32} ARLEN {PRESENT 0 WIDTH 8} ARSIZE {PRESENT 0 WIDTH 3} ARBURST {PRESENT 0 WIDTH 2} ARLOCK {PRESENT 0 WIDTH 1} ARCACHE {PRESENT 0 WIDTH 4} ARPROT {PRESENT 1 WIDTH 3} RDATA {PRESENT 1 WIDTH 32} RRESP {PRESENT 1 WIDTH 2} RLAST {PRESENT 0 WIDTH 1} AWID {PRESENT 0 WIDTH 0} AWREGION {PRESENT 1 WIDTH 4} AWQOS {PRESENT 1 WIDTH 4} AWUSER {PRESENT 0 WIDTH 0} WID {PRESENT 0 WIDTH 0} WUSER {PRESENT 0 WIDTH 0} BID {PRESENT 0 WIDTH 0} BUSER {PRESENT 0 WIDTH 0} ARID {PRESENT 0 WIDTH 0} ARREGION {PRESENT 1 WIDTH 4} ARQOS {PRESENT 1 WIDTH 4} ARUSER {PRESENT 0 WIDTH 0} RID {PRESENT 0 WIDTH 0} RUSER {PRESENT 0 WIDTH 0}}}} IPI_PROP_COUNT 2} \
-CONFIG.GUI_HAS_AXI_LITE {true} \
-CONFIG.GUI_HAS_SIGNAL_CONTROL {false} \
-CONFIG.GUI_HAS_SIGNAL_STATUS {1} \
-CONFIG.GUI_INTERFACE_NAME {gmem} \
-CONFIG.GUI_INTERFACE_PROTOCOL {axi4} \
-CONFIG.GUI_SELECT_INTERFACE {0} \
-CONFIG.GUI_SELECT_MODE {master} \
-CONFIG.GUI_SELECT_VLNV {xilinx.com:interface:aximm_rtl:1.0} \
-CONFIG.GUI_SIGNAL_DECOUPLED_0 {true} \
-CONFIG.GUI_SIGNAL_DECOUPLED_1 {true} \
-CONFIG.GUI_SIGNAL_DECOUPLED_2 {true} \
-CONFIG.GUI_SIGNAL_DECOUPLED_3 {true} \
-CONFIG.GUI_SIGNAL_DECOUPLED_4 {true} \
-CONFIG.GUI_SIGNAL_DECOUPLED_5 {true} \
-CONFIG.GUI_SIGNAL_DECOUPLED_6 {true} \
-CONFIG.GUI_SIGNAL_DECOUPLED_7 {true} \
-CONFIG.GUI_SIGNAL_DECOUPLED_8 {true} \
-CONFIG.GUI_SIGNAL_DECOUPLED_9 {true} \
-CONFIG.GUI_SIGNAL_PRESENT_0 {true} \
-CONFIG.GUI_SIGNAL_PRESENT_1 {true} \
-CONFIG.GUI_SIGNAL_PRESENT_2 {true} \
-CONFIG.GUI_SIGNAL_PRESENT_3 {true} \
-CONFIG.GUI_SIGNAL_PRESENT_4 {true} \
-CONFIG.GUI_SIGNAL_PRESENT_5 {true} \
-CONFIG.GUI_SIGNAL_PRESENT_6 {true} \
-CONFIG.GUI_SIGNAL_PRESENT_7 {true} \
-CONFIG.GUI_SIGNAL_PRESENT_8 {true} \
-CONFIG.GUI_SIGNAL_PRESENT_9 {true} \
-CONFIG.GUI_SIGNAL_SELECT_0 {ARVALID} \
-CONFIG.GUI_SIGNAL_SELECT_1 {ARREADY} \
-CONFIG.GUI_SIGNAL_SELECT_2 {AWVALID} \
-CONFIG.GUI_SIGNAL_SELECT_3 {AWREADY} \
-CONFIG.GUI_SIGNAL_SELECT_4 {BVALID} \
-CONFIG.GUI_SIGNAL_SELECT_5 {BREADY} \
-CONFIG.GUI_SIGNAL_SELECT_6 {RVALID} \
-CONFIG.GUI_SIGNAL_SELECT_7 {RREADY} \
-CONFIG.GUI_SIGNAL_SELECT_8 {WVALID} \
-CONFIG.GUI_SIGNAL_SELECT_9 {WREADY} \
+   CONFIG.ALL_PARAMS {HAS_AXI_LITE 1 HAS_SIGNAL_CONTROL 0 HAS_SIGNAL_STATUS 1 INTF {gmem {ID 0 VLNV xilinx.com:interface:aximm_rtl:1.0 SIGNALS {ARVALID {PRESENT 1 WIDTH 1} ARREADY {PRESENT 1 WIDTH 1} AWVALID {PRESENT 1 WIDTH 1} AWREADY {PRESENT 1 WIDTH 1} BVALID {PRESENT 1 WIDTH 1} BREADY {PRESENT 1 WIDTH 1} RVALID {PRESENT 1 WIDTH 1} RREADY {PRESENT 1 WIDTH 1} WVALID {PRESENT 1 WIDTH 1} WREADY {PRESENT 1 WIDTH 1} AWID {PRESENT 1 WIDTH 5} AWADDR {PRESENT 1 WIDTH 64} AWLEN {PRESENT 1 WIDTH 8} AWSIZE {PRESENT 1 WIDTH 3} AWBURST {PRESENT 1 WIDTH 2} AWLOCK {PRESENT 1 WIDTH 1} AWCACHE {PRESENT 1 WIDTH 4} AWPROT {PRESENT 1 WIDTH 3} AWREGION {PRESENT 1 WIDTH 4} AWQOS {PRESENT 1 WIDTH 4} AWUSER {PRESENT 0 WIDTH 0} WID {PRESENT 1 WIDTH 5} WDATA {PRESENT 1 WIDTH 128} WSTRB {PRESENT 1 WIDTH 16} WLAST {PRESENT 1 WIDTH 1} WUSER {PRESENT 0 WIDTH 0} BID {PRESENT 1 WIDTH 5} BRESP {PRESENT 1 WIDTH 2} BUSER {PRESENT 0 WIDTH 0} ARID {PRESENT 1 WIDTH 5} ARADDR {PRESENT 1 WIDTH 64} ARLEN {PRESENT 1 WIDTH 8} ARSIZE {PRESENT 1 WIDTH 3} ARBURST {PRESENT 1 WIDTH 2} ARLOCK {PRESENT 1 WIDTH 1} ARCACHE {PRESENT 1 WIDTH 4} ARPROT {PRESENT 1 WIDTH 3} ARREGION {PRESENT 1 WIDTH 4} ARQOS {PRESENT 1 WIDTH 4} ARUSER {PRESENT 0 WIDTH 0} RID {PRESENT 1 WIDTH 5} RDATA {PRESENT 1 WIDTH 128} RRESP {PRESENT 1 WIDTH 2} RLAST {PRESENT 1 WIDTH 1} RUSER {PRESENT 0 WIDTH 0}}} ctrl {ID 1 MODE slave VLNV xilinx.com:interface:aximm_rtl:1.0 PROTOCOL axi4lite SIGNALS {ARVALID {PRESENT 1 WIDTH 1} ARREADY {PRESENT 1 WIDTH 1} AWVALID {PRESENT 1 WIDTH 1} AWREADY {PRESENT 1 WIDTH 1} BVALID {PRESENT 1 WIDTH 1} BREADY {PRESENT 1 WIDTH 1} RVALID {PRESENT 1 WIDTH 1} RREADY {PRESENT 1 WIDTH 1} WVALID {PRESENT 1 WIDTH 1} WREADY {PRESENT 1 WIDTH 1} AWADDR {PRESENT 1 WIDTH 32} AWLEN {PRESENT 0 WIDTH 8} AWSIZE {PRESENT 0 WIDTH 3} AWBURST {PRESENT 0 WIDTH 2} AWLOCK {PRESENT 0 WIDTH 1} AWCACHE {PRESENT 0 WIDTH 4} AWPROT {PRESENT 1 WIDTH 3} WDATA {PRESENT 1 WIDTH 32} WSTRB {PRESENT 1 WIDTH 4} WLAST {PRESENT 0 WIDTH 1} BRESP {PRESENT 1 WIDTH 2} ARADDR {PRESENT 1 WIDTH 32} ARLEN {PRESENT 0 WIDTH 8} ARSIZE {PRESENT 0 WIDTH 3} ARBURST {PRESENT 0 WIDTH 2} ARLOCK {PRESENT 0 WIDTH 1} ARCACHE {PRESENT 0 WIDTH 4} ARPROT {PRESENT 1 WIDTH 3} RDATA {PRESENT 1 WIDTH 32} RRESP {PRESENT 1 WIDTH 2} RLAST {PRESENT 0 WIDTH 1} AWID {PRESENT 0 WIDTH 0} AWREGION {PRESENT 1 WIDTH 4} AWQOS {PRESENT 1 WIDTH 4} AWUSER {PRESENT 0 WIDTH 0} WID {PRESENT 0 WIDTH 0} WUSER {PRESENT 0 WIDTH 0} BID {PRESENT 0 WIDTH 0} BUSER {PRESENT 0 WIDTH 0} ARID {PRESENT 0 WIDTH 0} ARREGION {PRESENT 1 WIDTH 4} ARQOS {PRESENT 1 WIDTH 4} ARUSER {PRESENT 0 WIDTH 0} RID {PRESENT 0 WIDTH 0} RUSER {PRESENT 0 WIDTH 0}}}} IPI_PROP_COUNT 2} \
+   CONFIG.GUI_HAS_AXI_LITE {true} \
+   CONFIG.GUI_HAS_SIGNAL_CONTROL {false} \
+   CONFIG.GUI_HAS_SIGNAL_STATUS {1} \
+   CONFIG.GUI_INTERFACE_NAME {gmem} \
+   CONFIG.GUI_INTERFACE_PROTOCOL {axi4} \
+   CONFIG.GUI_SELECT_INTERFACE {0} \
+   CONFIG.GUI_SELECT_MODE {master} \
+   CONFIG.GUI_SELECT_VLNV {xilinx.com:interface:aximm_rtl:1.0} \
+   CONFIG.GUI_SIGNAL_DECOUPLED_0 {true} \
+   CONFIG.GUI_SIGNAL_DECOUPLED_1 {true} \
+   CONFIG.GUI_SIGNAL_DECOUPLED_2 {true} \
+   CONFIG.GUI_SIGNAL_DECOUPLED_3 {true} \
+   CONFIG.GUI_SIGNAL_DECOUPLED_4 {true} \
+   CONFIG.GUI_SIGNAL_DECOUPLED_5 {true} \
+   CONFIG.GUI_SIGNAL_DECOUPLED_6 {true} \
+   CONFIG.GUI_SIGNAL_DECOUPLED_7 {true} \
+   CONFIG.GUI_SIGNAL_DECOUPLED_8 {true} \
+   CONFIG.GUI_SIGNAL_DECOUPLED_9 {true} \
+   CONFIG.GUI_SIGNAL_PRESENT_0 {true} \
+   CONFIG.GUI_SIGNAL_PRESENT_1 {true} \
+   CONFIG.GUI_SIGNAL_PRESENT_2 {true} \
+   CONFIG.GUI_SIGNAL_PRESENT_3 {true} \
+   CONFIG.GUI_SIGNAL_PRESENT_4 {true} \
+   CONFIG.GUI_SIGNAL_PRESENT_5 {true} \
+   CONFIG.GUI_SIGNAL_PRESENT_6 {true} \
+   CONFIG.GUI_SIGNAL_PRESENT_7 {true} \
+   CONFIG.GUI_SIGNAL_PRESENT_8 {true} \
+   CONFIG.GUI_SIGNAL_PRESENT_9 {true} \
+   CONFIG.GUI_SIGNAL_SELECT_0 {ARVALID} \
+   CONFIG.GUI_SIGNAL_SELECT_1 {ARREADY} \
+   CONFIG.GUI_SIGNAL_SELECT_2 {AWVALID} \
+   CONFIG.GUI_SIGNAL_SELECT_3 {AWREADY} \
+   CONFIG.GUI_SIGNAL_SELECT_4 {BVALID} \
+   CONFIG.GUI_SIGNAL_SELECT_5 {BREADY} \
+   CONFIG.GUI_SIGNAL_SELECT_6 {RVALID} \
+   CONFIG.GUI_SIGNAL_SELECT_7 {RREADY} \
+   CONFIG.GUI_SIGNAL_SELECT_8 {WVALID} \
+   CONFIG.GUI_SIGNAL_SELECT_9 {WREADY} \
  ] $pr_decoupler_0
 
   # Create instance: pr_region
@@ -366,59 +428,59 @@ CONFIG.GUI_SIGNAL_SELECT_9 {WREADY} \
   # Create instance: system_ila_0, and set properties
   set system_ila_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:system_ila:1.1 system_ila_0 ]
   set_property -dict [ list \
-CONFIG.C_BRAM_CNT {6} \
-CONFIG.C_NUM_MONITOR_SLOTS {2} \
+   CONFIG.C_BRAM_CNT {6} \
+   CONFIG.C_NUM_MONITOR_SLOTS {2} \
  ] $system_ila_0
 
   # Create instance: util_ds_buf, and set properties
   set util_ds_buf [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.1 util_ds_buf ]
   set_property -dict [ list \
-CONFIG.C_BUF_TYPE {IBUFDSGTE} \
+   CONFIG.C_BUF_TYPE {IBUFDSGTE} \
  ] $util_ds_buf
 
   # Create instance: util_vector_logic_1, and set properties
   set util_vector_logic_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_1 ]
   set_property -dict [ list \
-CONFIG.C_OPERATION {not} \
-CONFIG.C_SIZE {1} \
-CONFIG.LOGO_FILE {data/sym_notgate.png} \
+   CONFIG.C_OPERATION {not} \
+   CONFIG.C_SIZE {1} \
+   CONFIG.LOGO_FILE {data/sym_notgate.png} \
  ] $util_vector_logic_1
 
   # Create instance: vio_0, and set properties
   set vio_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:vio:3.0 vio_0 ]
   set_property -dict [ list \
-CONFIG.C_EN_PROBE_IN_ACTIVITY {0} \
-CONFIG.C_NUM_PROBE_IN {1} \
-CONFIG.C_NUM_PROBE_OUT {2} \
-CONFIG.C_PROBE_OUT0_INIT_VAL {0x0} \
-CONFIG.C_PROBE_OUT1_WIDTH {32} \
+   CONFIG.C_EN_PROBE_IN_ACTIVITY {0} \
+   CONFIG.C_NUM_PROBE_IN {1} \
+   CONFIG.C_NUM_PROBE_OUT {2} \
+   CONFIG.C_PROBE_OUT0_INIT_VAL {0x0} \
+   CONFIG.C_PROBE_OUT1_WIDTH {32} \
  ] $vio_0
 
   # Create instance: xdma_0, and set properties
   set xdma_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xdma:4.1 xdma_0 ]
   set_property -dict [ list \
-CONFIG.axi_data_width {256_bit} \
-CONFIG.axilite_master_en {true} \
-CONFIG.axisten_freq {250} \
-CONFIG.cfg_mgmt_if {false} \
-CONFIG.dedicate_perst {false} \
-CONFIG.pcie_blk_locn {X0Y1} \
-CONFIG.pf0_device_id {8038} \
-CONFIG.pf0_msix_cap_pba_bir {BAR_1} \
-CONFIG.pf0_msix_cap_table_bir {BAR_1} \
-CONFIG.pl_link_cap_max_link_speed {8.0_GT/s} \
-CONFIG.pl_link_cap_max_link_width {X8} \
-CONFIG.select_quad {GTH_Quad_228} \
-CONFIG.xdma_axi_intf_mm {AXI_Memory_Mapped} \
-CONFIG.xdma_rnum_chnl {4} \
-CONFIG.xdma_wnum_chnl {4} \
+   CONFIG.axi_data_width {256_bit} \
+   CONFIG.axilite_master_en {true} \
+   CONFIG.axisten_freq {250} \
+   CONFIG.cfg_mgmt_if {false} \
+   CONFIG.dedicate_perst {false} \
+   CONFIG.pcie_blk_locn {X0Y1} \
+   CONFIG.pf0_device_id {8038} \
+   CONFIG.pf0_msix_cap_pba_bir {BAR_1} \
+   CONFIG.pf0_msix_cap_table_bir {BAR_1} \
+   CONFIG.pl_link_cap_max_link_speed {8.0_GT/s} \
+   CONFIG.pl_link_cap_max_link_width {X8} \
+   CONFIG.select_quad {GTH_Quad_228} \
+   CONFIG.xdma_axi_intf_mm {AXI_Memory_Mapped} \
+   CONFIG.xdma_rnum_chnl {4} \
+   CONFIG.xdma_wnum_chnl {4} \
  ] $xdma_0
 
   # Create instance: xdma_0_axi_periph, and set properties
   set xdma_0_axi_periph [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 xdma_0_axi_periph ]
   set_property -dict [ list \
-CONFIG.M00_HAS_REGSLICE {4} \
-CONFIG.NUM_MI {3} \
+   CONFIG.M00_HAS_REGSLICE {4} \
+   CONFIG.NUM_MI {3} \
  ] $xdma_0_axi_periph
 
   # Create interface connections
@@ -478,4 +540,6 @@ connect_bd_intf_net -intf_net [get_bd_intf_nets pr_decoupler_0_s_gmem] [get_bd_i
 
 create_root_design ""
 
+
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 

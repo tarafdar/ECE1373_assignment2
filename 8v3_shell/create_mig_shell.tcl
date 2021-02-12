@@ -2,7 +2,7 @@ create_project mig_shell 8v3_shell/mig_shell_ila_proj -part xcvu095-ffvc1517-2-e
 set_property  ip_repo_paths  {8v3_shell/ocl_ips} [current_project]
 update_ip_catalog
 
-source 8v3_shell/mig_shell_ila_bd.tcl 
+source 8v3_shell/mig_shell_ila_bd_3.tcl 
 update_compile_order -fileset sources_1
 
 make_wrapper -files [get_files 8v3_shell/mig_shell_ila_proj/mig_shell.srcs/sources_1/bd/static_region/static_region.bd] -top
