@@ -19,12 +19,6 @@ The source code is organized as follows:
 To create a project with the sample unoptimized code and run csim and synth design do the following:
 
 
-## Pre-requisites
-
-1. Install vivado 2017.2 in /opt/  (Already done in the container)
-2. Install caffe in /opt/  (Already done in the container)
-3. ``source sourceme.sh`` 
-
 
 
 ## FPGA Hypervisor 
@@ -41,16 +35,6 @@ The Hypervisor contains the following:
 Do not create a new hypervisor as you will be sharing this FPGA with your colleagues who will be building with the same hypervisor
 The Makefile is modified to pull the DCP as needed. 
 
-
-## Creating the Data
-
-To create the data run the nn_params/extractParams_imagenet.py from the project root. You can specify additinal args (optionally)
-
-``python nn_params/extractParams_imagenet.py --total_batches <number of batches> --model <location of deploy.txt>  --weights <location of caffemodel (weights)> --mean_file <location of mean file> --image_root <location of where you would like to dump your batch data> --imagenet_val_path <location of imagenet database>``
-
-All of these are optional flags. The rest of the test applications assume the current locations of where the images are being dumped, so it is recommended that you do not input any flags to begin with.
-
-``python nn_params/extractParams_imagenet.py``
 
 
 ## Running an Example
@@ -99,18 +83,4 @@ Programming template:
 ``/opt/util/prog_util/program.sh <partial.bit file> <partial_clear.bit file>``
 
 
-## Verifying Accuracy
 
-The above test creates a file in the data directory for each batch layer called dma_out. 
-The nn_params/softMax.py script pumps the data out of the last fully connected layer  through a softmax and compares the results with the label information.
-This will give you an accuracy result of your network. 
-
-To verify accuracy you can run the following:
-
-``python nn_params/softMax.py --total_batches <number of batches> --model <location of deploy.txt>  --weights <location of caffemodel (weights)> --image_root_path <location of where you would like to dump your batch data> --last_fc <the name of the fully connected layer before the softmax> --softmax <name of the softmax layer>``
-
-Like the above python script in generating data, the default parameters are what you would be using for this assignment so:
-
-``python nn_params/softMax.py``
-
-Will suffice
