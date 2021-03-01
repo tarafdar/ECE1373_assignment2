@@ -3,7 +3,7 @@
 Welcome to the second assignment in ECE1373
 
 This will describe how to run the provided sample code in this directory. 
-This description assumes you have read the assignment handout in doc/assignment2.pdf
+
 
 ## Code Organization
 
