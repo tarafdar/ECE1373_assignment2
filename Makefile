@@ -5,7 +5,7 @@ PR_SRCS = conv_test/conv_layer.cpp conv_test/conv_layer.h fc_test/fc_layer.cpp f
 all: conv_layer fc_layer hw_conv_layer hw_fc_layer
 
 conv_layer: conv_test/* util/*
-	g++ conv_test/*.cpp conv_test/*.c util/*.cpp -I conv_test -I./ -o conv_layer -std=c++11
+	g++ -O2 conv_test/*.cpp conv_test/*.c util/*.cpp -I conv_test -I./ -o conv_layer -std=c++11
 
 hw_conv_layer: conv_test/* util/*
 	g++ -DHW_TEST conv_test/*.cpp conv_test/*.c util/*.cpp -I conv_test -I./ -o hw_conv_layer -std=c++11
